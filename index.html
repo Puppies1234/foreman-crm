@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Foreman</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark"></span>Foreman</div>
+    <nav class="nav-links">
+      <a class="nav-link active" href="index.html">Dashboard</a>
+      <a class="nav-link" href="calendar.html">Calendar</a>
+      <a class="nav-link" href="contact.html?job=j1">Contacts</a>
+    </nav>
+    <div class="sidebar-footer">Foreman Home Services<br>Austin, TX</div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Good morning</h1>
+        <div class="page-subtitle">Friday, September 18 — here's what's happening today.</div>
+      </div>
+    </div>
+
+    <div class="stats-row" id="stats-row"></div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <h2>Today's schedule</h2>
+          <a href="calendar.html" class="card-eyebrow">Full calendar →</a>
+        </div>
+        <div id="schedule-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>AI activity feed</h2>
+        </div>
+        <div id="activity-feed"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

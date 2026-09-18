@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendar — Foreman</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark"></span>Foreman</div>
+    <nav class="nav-links">
+      <a class="nav-link" href="index.html">Dashboard</a>
+      <a class="nav-link active" href="calendar.html">Calendar</a>
+      <a class="nav-link" href="contact.html?job=j1">Contacts</a>
+    </nav>
+    <div class="sidebar-footer">Foreman Home Services<br>Austin, TX</div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Calendar</h1>
+        <div class="page-subtitle">Week of September 14 – 18</div>
+      </div>
+    </div>
+
+    <div class="calendar-layout">
+      <div>
+        <div class="tech-legend" id="tech-legend"></div>
+        <div class="week-grid" id="week-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Unscheduled leads</h2></div>
+        <div id="unscheduled-list"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/calendar.js"></script>
+</body>
+</html>
