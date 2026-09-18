@@ -19,18 +19,30 @@
   </aside>
 
   <main class="main">
-    <div class="page-header">
+    <div class="page-header calendar-header">
       <div>
         <h1>Calendar</h1>
-        <div class="page-subtitle">Week of September 14 – 20</div>
+        <div class="page-subtitle" id="period-label">—</div>
+      </div>
+
+      <div class="calendar-toolbar">
+        <div class="view-toggle" id="view-toggle">
+          <button type="button" class="view-toggle-btn" data-view="day">Day</button>
+          <button type="button" class="view-toggle-btn active" data-view="week">Week</button>
+          <button type="button" class="view-toggle-btn" data-view="month">Month</button>
+        </div>
+        <div class="nav-controls">
+          <button type="button" class="nav-btn" id="nav-prev" aria-label="Previous">‹</button>
+          <button type="button" class="nav-today-btn" id="nav-today">Today</button>
+          <button type="button" class="nav-btn" id="nav-next" aria-label="Next">›</button>
+        </div>
       </div>
     </div>
 
+    <div class="tech-legend" id="tech-legend"></div>
+
     <div class="calendar-layout">
-      <div>
-        <div class="tech-legend" id="tech-legend"></div>
-        <div class="week-grid" id="week-grid"></div>
-      </div>
+      <div id="calendar-view"></div>
 
       <div class="card">
         <div class="card-header"><h2>Unscheduled leads</h2></div>

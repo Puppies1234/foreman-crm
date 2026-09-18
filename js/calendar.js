@@ -1,23 +1,83 @@
 const HOUR_START = 7;   // 7 AM
 const HOUR_END = 18;    // 6 PM
-const HOUR_HEIGHT = 64;  // px per hour
+const HOUR_HEIGHT_WEEK = 80; // px per hour, week view
+const HOUR_HEIGHT_DAY = 96;  // px per hour, day view
+
+const state = {
+  view: "week",
+  refDate: new Date(TODAY + "T00:00"),
+};
 
 document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".view-toggle-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.view = btn.dataset.view;
+      render();
+    });
+  });
+  document.getElementById("nav-prev").addEventListener("click", () => navigate(-1));
+  document.getElementById("nav-next").addEventListener("click", () => navigate(1));
+  document.getElementById("nav-today").addEventListener("click", () => navigate(0));
+
   renderLegend();
-  renderWeek();
   renderUnscheduled();
+  render();
 });
+
+function navigate(direction) {
+  if (direction === 0) {
+    state.refDate = new Date(TODAY + "T00:00");
+    render();
+    return;
+  }
+  const d = new Date(state.refDate);
+  if (state.view === "day") d.setDate(d.getDate() + direction);
+  else if (state.view === "week") d.setDate(d.getDate() + direction * 7);
+  else if (state.view === "month") d.setMonth(d.getMonth() + direction);
+  state.refDate = d;
+  render();
+}
+
+function render() {
+  document.querySelectorAll(".view-toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.view === state.view);
+  });
+  document.getElementById("period-label").textContent = periodLabel();
+
+  const container = document.getElementById("calendar-view");
+  if (state.view === "day") renderDayView(container);
+  else if (state.view === "month") renderMonthView(container);
+  else renderWeekView(container);
+}
+
+function periodLabel() {
+  if (state.view === "day") {
+    return state.refDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) +
+      (isoDate(state.refDate) === TODAY ? " · Today" : "");
+  }
+  if (state.view === "month") {
+    return state.refDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  }
+  const days = getWeekdays(state.refDate);
+  const start = days[0], end = days[6];
+  const startStr = start.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  const endStr = start.getMonth() === end.getMonth()
+    ? end.toLocaleDateString("en-US", { day: "numeric" })
+    : end.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  return `Week of ${startStr} – ${endStr}`;
+}
+
+/* --- Shared helpers --- */
 
 function techSlug(name) {
   return name.split(" ")[0].toLowerCase();
 }
 
-function getWeekdays() {
-  const today = new Date(TODAY + "T00:00");
-  const day = today.getDay(); // 0 = Sun ... 6 = Sat
-  const monday = new Date(today);
+function getWeekdays(refDate) {
+  const day = refDate.getDay(); // 0 = Sun ... 6 = Sat
+  const monday = new Date(refDate);
   const diffToMonday = day === 0 ? -6 : 1 - day;
-  monday.setDate(today.getDate() + diffToMonday);
+  monday.setDate(refDate.getDate() + diffToMonday);
 
   const days = [];
   for (let i = 0; i < 7; i++) {
@@ -44,19 +104,7 @@ function formatHourLabel(hour) {
   return `${h12} ${period}`;
 }
 
-function formatTimeCompact(d) {
-  const h12 = d.getHours() % 12 === 0 ? 12 : d.getHours() % 12;
-  const m = d.getMinutes();
-  return m === 0 ? `${h12}` : `${h12}:${String(m).padStart(2, "0")}`;
-}
-
-function formatApptTimeRange(startIso, endIso) {
-  const start = new Date(startIso);
-  const end = new Date(endIso);
-  const samePeriod = (start.getHours() < 12) === (end.getHours() < 12);
-  if (samePeriod) {
-    return `${formatTimeCompact(start)}–${formatTime(endIso)}`;
-  }
+function fullTimeRange(startIso, endIso) {
   return `${formatTime(startIso)} – ${formatTime(endIso)}`;
 }
 
@@ -74,10 +122,10 @@ function renderLegend() {
   `).join("");
 }
 
-function renderHourMarks() {
+function renderHourMarks(hourHeight) {
   let html = "";
   for (let h = HOUR_START; h <= HOUR_END; h++) {
-    const top = (h - HOUR_START) * HOUR_HEIGHT;
+    const top = (h - HOUR_START) * hourHeight;
     html += `
       <div class="hour-mark" style="top:${top}px;">
         <span class="hour-label">${formatHourLabel(h)}</span>
@@ -88,48 +136,112 @@ function renderHourMarks() {
   return html;
 }
 
-function renderWeek() {
-  const days = getWeekdays();
-  const grid = document.getElementById("week-grid");
-  const gridHeight = (HOUR_END - HOUR_START) * HOUR_HEIGHT;
+function renderDayColumn(dateObj, { big = false } = {}) {
+  const hourHeight = big ? HOUR_HEIGHT_DAY : HOUR_HEIGHT_WEEK;
+  const dateStr = isoDate(dateObj);
+  const isToday = dateStr === TODAY;
+  const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+  const gridHeight = (HOUR_END - HOUR_START) * hourHeight;
 
-  grid.innerHTML = days.map(d => {
+  const dayAppts = APPOINTMENTS
+    .filter(a => a.start_time.startsWith(dateStr))
+    .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+  const apptsHtml = dayAppts.map(appt => {
+    const job = getJob(appt.job_id);
+    const contact = getContact(job.contact_id);
+    const top = (hourDecimal(appt.start_time) - HOUR_START) * hourHeight;
+    const height = (hourDecimal(appt.end_time) - hourDecimal(appt.start_time)) * hourHeight;
+    return `
+      <a href="contact.html?job=${job.id}" class="appt-block ${big ? "big" : ""} tech-${techSlug(appt.assigned_tech)}" style="top:${top}px; height:${height}px;">
+        <div class="appt-time">${fullTimeRange(appt.start_time, appt.end_time)}</div>
+        <div class="appt-title">${job.service_type}</div>
+        <div class="appt-customer">${contact.full_name}</div>
+      </a>
+    `;
+  }).join("");
+
+  const emptyHtml = dayAppts.length === 0 ? `<div class="empty-note day-empty-note">No appointments</div>` : "";
+
+  return `
+    <div class="day-column ${isWeekend ? "weekend" : ""} ${big ? "big" : ""}">
+      <div class="day-column-header ${isToday ? "today" : ""}">
+        ${dateObj.toLocaleDateString("en-US", { weekday: "long" })}
+        <span class="day-date">${dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" })}${isToday ? " · Today" : ""}</span>
+      </div>
+      <div class="day-time-grid" style="height:${gridHeight}px;">
+        ${renderHourMarks(hourHeight)}
+        ${emptyHtml}
+        ${apptsHtml}
+      </div>
+    </div>
+  `;
+}
+
+/* --- Views --- */
+
+function renderWeekView(container) {
+  const days = getWeekdays(state.refDate);
+  container.innerHTML = `
+    <div class="week-scroll">
+      <div class="week-grid">
+        ${days.map(d => renderDayColumn(d, { big: false })).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderDayView(container) {
+  container.innerHTML = `
+    <div class="day-view">
+      ${renderDayColumn(state.refDate, { big: true })}
+    </div>
+  `;
+}
+
+function renderMonthView(container) {
+  const year = state.refDate.getFullYear();
+  const month = state.refDate.getMonth();
+  const first = new Date(year, month, 1);
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const firstWeekday = first.getDay(); // 0 = Sun
+  const startOffset = firstWeekday === 0 ? 6 : firstWeekday - 1; // days before the 1st to reach Monday
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= totalDays; d++) cells.push(new Date(year, month, d));
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const dowRow = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    .map(n => `<div class="month-dow">${n}</div>`).join("");
+
+  const cellsHtml = cells.map(d => {
+    if (!d) return `<div class="month-cell empty"></div>`;
     const dateStr = isoDate(d);
     const isToday = dateStr === TODAY;
-    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-    const dayAppts = APPOINTMENTS
-      .filter(a => a.start_time.startsWith(dateStr))
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
-
-    const apptsHtml = dayAppts.map(appt => {
-      const job = getJob(appt.job_id);
-      const contact = getContact(job.contact_id);
-      const top = (hourDecimal(appt.start_time) - HOUR_START) * HOUR_HEIGHT;
-      const height = (hourDecimal(appt.end_time) - hourDecimal(appt.start_time)) * HOUR_HEIGHT;
-      return `
-        <a href="contact.html?job=${job.id}" class="appt-block tech-${techSlug(appt.assigned_tech)}" style="top:${top}px; height:${height}px;" title="${contact.full_name} · ${appt.assigned_tech}">
-          <div class="appt-time">${formatApptTimeRange(appt.start_time, appt.end_time)}</div>
-          <div class="appt-title">${job.service_type}</div>
-        </a>
-      `;
-    }).join("");
-
-    const emptyHtml = dayAppts.length === 0 ? `<div class="empty-note day-empty-note">No appointments</div>` : "";
-
+    const count = APPOINTMENTS.filter(a => a.start_time.startsWith(dateStr)).length;
     return `
-      <div class="day-column ${isWeekend ? "weekend" : ""}">
-        <div class="day-column-header ${isToday ? "today" : ""}">
-          ${d.toLocaleDateString("en-US", { weekday: "long" })}
-          <span class="day-date">${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}${isToday ? " · Today" : ""}</span>
-        </div>
-        <div class="day-time-grid" style="height:${gridHeight}px;">
-          ${renderHourMarks()}
-          ${emptyHtml}
-          ${apptsHtml}
-        </div>
+      <div class="month-cell ${isToday ? "today" : ""}" data-date="${dateStr}">
+        <div class="month-cell-date">${d.getDate()}</div>
+        ${count > 0 ? `<div class="month-count"><span class="month-dot"></span>${count} appt${count > 1 ? "s" : ""}</div>` : ""}
       </div>
     `;
   }).join("");
+
+  container.innerHTML = `
+    <div class="month-grid-wrap">
+      <div class="month-dow-row">${dowRow}</div>
+      <div class="month-grid">${cellsHtml}</div>
+    </div>
+  `;
+
+  container.querySelectorAll(".month-cell[data-date]").forEach(cell => {
+    cell.addEventListener("click", () => {
+      state.refDate = new Date(cell.getAttribute("data-date") + "T00:00");
+      state.view = "day";
+      render();
+    });
+  });
 }
 
 function renderUnscheduled() {
