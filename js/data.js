@@ -9,6 +9,7 @@ const CONTACTS = [
   { id: "c4", full_name: "Wes Trammell", phone: "(512) 555-0176", email: "wes.trammell@gmail.com", address: "3309 Oakhaven Blvd, Austin, TX", preferred_contact: "SMS", source: "Facebook" },
   { id: "c5", full_name: "Loretta Fenn", phone: "(512) 555-0163", email: "lfenn@icloud.com", address: "77 Cedar Park Cir, Cedar Park, TX", preferred_contact: "Phone", source: "Referral" },
   { id: "c6", full_name: "Sam Iturbide", phone: "(737) 555-0140", email: "sam.iturbide@gmail.com", address: "560 Barton Springs Rd, Austin, TX", preferred_contact: "Email", source: "Google" },
+  { id: "c7", full_name: "Yolanda Briggs", phone: "(512) 555-0185", email: "yolanda.briggs@gmail.com", address: "902 Mesa Verde Trl, Austin, TX", preferred_contact: "Phone", source: "Google" },
 ];
 
 const JOBS = [
@@ -20,6 +21,7 @@ const JOBS = [
   { id: "j6", contact_id: "c6", service_type: "Outlet not working", category: "Electrical", urgency: "Medium", status: "Completed", assigned_to: "Nia Brackett", quote_amount: 220, intake_notes: "Kitchen GFCI tripped and won't reset. Two downstream outlets also dead." },
   { id: "j7", contact_id: "c1", service_type: "Leaky faucet, guest bath", category: "Plumbing", urgency: "Low", status: "New Lead", assigned_to: "Unassigned", quote_amount: null, intake_notes: "Steady drip at cold handle, worsening over the last week." },
   { id: "j8", contact_id: "c4", service_type: "Circuit breaker tripping", category: "Electrical", urgency: "Medium", status: "Qualified", assigned_to: "Nia Brackett", quote_amount: null, intake_notes: "Breaker for garage trips within minutes of using table saw. Suspect undersized circuit." },
+  { id: "j9", contact_id: "c7", service_type: "Emergency pipe burst", category: "Plumbing", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", quote_amount: null, intake_notes: "Burst supply line under kitchen sink, water shut off at the main. Needs same-weekend repair." },
 ];
 
 const APPOINTMENTS = [
@@ -29,6 +31,8 @@ const APPOINTMENTS = [
   { id: "a4", job_id: "j2", start_time: "2026-09-16T08:30", end_time: "2026-09-16T10:00", assigned_tech: "Kim Osei", status: "Pending confirmation" },
   { id: "a5", job_id: "j4", start_time: "2026-09-15T13:00", end_time: "2026-09-15T15:00", assigned_tech: "Ray Dunmore", status: "Confirmed" },
   { id: "a6", job_id: "j8", start_time: "2026-09-14T10:00", end_time: "2026-09-14T11:30", assigned_tech: "Nia Brackett", status: "Pending confirmation" },
+  { id: "a7", job_id: "j9", start_time: "2026-09-19T10:00", end_time: "2026-09-19T12:00", assigned_tech: "Ray Dunmore", status: "Confirmed" },
+  { id: "a8", job_id: "j7", start_time: "2026-09-20T13:00", end_time: "2026-09-20T14:00", assigned_tech: "Kim Osei", status: "Pending confirmation" },
 ];
 
 const CALLS = [
