@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — Foreman</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="js/theme.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark"></span>Foreman</div>
+    <nav class="nav-links">
+      <a class="nav-link" href="index.html">Dashboard</a>
+      <a class="nav-link" href="calendar.html">Calendar</a>
+      <a class="nav-link" href="contact.html?job=j1">Contacts</a>
+      <a class="nav-link active" href="settings.html">Settings</a>
+    </nav>
+    <div class="sidebar-footer">Foreman Home Services<br>Austin, TX</div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <h1>Settings</h1>
+        <div class="page-subtitle">Manage how Foreman looks and works for your team.</div>
+      </div>
+    </div>
+
+    <div class="settings-tabs" id="settings-tabs">
+      <button type="button" class="settings-tab-btn active" data-tab="general">General</button>
+      <button type="button" class="settings-tab-btn" data-tab="design">Design</button>
+      <button type="button" class="settings-tab-btn" data-tab="notifications">Notifications</button>
+    </div>
+
+    <div class="settings-panel" data-panel="general">
+      <div class="card">
+        <div class="card-header"><h2>General</h2></div>
+        <p class="empty-note">More settings coming soon.</p>
+      </div>
+    </div>
+
+    <div class="settings-panel" data-panel="design" hidden>
+      <div class="card">
+        <div class="card-header"><h2>Accent color</h2></div>
+        <div class="design-layout">
+          <div class="design-picker">
+            <div class="hue-wheel-wrap">
+              <div class="hue-wheel" id="hue-wheel">
+                <div class="hue-wheel-handle" id="hue-handle"></div>
+              </div>
+            </div>
+
+            <div class="shade-control">
+              <label for="shade-slider">Brightness</label>
+              <input type="range" id="shade-slider" min="12" max="55" step="1">
+            </div>
+
+            <div class="swatch-row" id="swatch-row">
+              <button type="button" class="swatch-btn" data-hex="#1E3A5F" title="Navy"></button>
+              <button type="button" class="swatch-btn" data-hex="#2F5233" title="Forest green"></button>
+              <button type="button" class="swatch-btn" data-hex="#B65C3B" title="Terracotta"></button>
+              <button type="button" class="swatch-btn" data-hex="#3E5C76" title="Slate blue"></button>
+              <button type="button" class="swatch-btn" data-hex="#6D2436" title="Burgundy"></button>
+            </div>
+          </div>
+
+          <div class="design-preview">
+            <div class="card-eyebrow">Live preview</div>
+            <div class="theme-preview" id="theme-preview">
+              <div class="theme-preview-sidebar">
+                <div class="theme-preview-brand"><span></span>Foreman</div>
+                <div class="theme-preview-navitem theme-preview-navitem-active">Dashboard</div>
+                <div class="theme-preview-navitem">Calendar</div>
+                <div class="theme-preview-navitem">Contacts</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Calendar colors</h2></div>
+        <p class="page-subtitle" style="margin:-8px 0 16px;">Give each technician their own appointment color.</p>
+        <div class="color-picker-list" id="tech-color-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Contact status colors</h2></div>
+        <p class="page-subtitle" style="margin:-8px 0 16px;">Customize the tag color for each job status.</p>
+        <div class="color-picker-list" id="status-color-list"></div>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="save-all-btn">Save</button>
+        <span class="save-confirm" id="save-confirm" hidden>Saved — applied across Foreman.</span>
+      </div>
+    </div>
+
+    <div class="settings-panel" data-panel="notifications" hidden>
+      <div class="card">
+        <div class="card-header"><h2>Notifications</h2></div>
+        <p class="empty-note">More settings coming soon.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/settings.js"></script>
+</body>
+</html>
