@@ -68,10 +68,8 @@ function periodLabel() {
 }
 
 /* --- Shared helpers --- */
-
-function techSlug(name) {
-  return name.split(" ")[0].toLowerCase();
-}
+// techSlug/statusSlug/chevronIcon now live in js/data.js, shared with
+// dashboard.js and contact.js.
 
 function getWeekdays(refDate) {
   const day = refDate.getDay(); // 0 = Sun ... 6 = Sat
@@ -259,9 +257,13 @@ function renderUnscheduled() {
     return `
       <a href="contact.html?job=${job.id}" style="display:block;">
         <div class="unscheduled-item">
-          <div class="unscheduled-title">${job.service_type}</div>
+          <div class="unscheduled-title">
+            <span class="row-dot" style="background-image: var(--gloss), var(--status-${statusSlug(job.status)}-grad, var(--pine-grad));"></span>
+            ${job.service_type}
+          </div>
           <div class="unscheduled-meta">${contact.full_name} · ${job.category}</div>
           <span class="badge ${statusBadgeClass(job.status)}">${job.status}</span>
+          ${chevronIcon()}
         </div>
       </a>
     `;

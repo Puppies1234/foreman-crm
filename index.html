@@ -14,21 +14,29 @@
     <nav class="nav-links">
       <a class="nav-link active" href="index.html">Dashboard</a>
       <a class="nav-link" href="calendar.html">Calendar</a>
-      <a class="nav-link" href="contact.html?job=j1">Contacts</a>
+      <a class="nav-link" href="contact.html?contact=c1">Contacts</a>
       <a class="nav-link" href="settings.html">Settings</a>
     </nav>
     <div class="sidebar-footer">Foreman Home Services<br>Austin, TX</div>
   </aside>
 
   <main class="main">
-    <div class="page-header">
-      <div>
+    <div class="today-strip" id="today-strip">
+      <div class="today-strip-text">
         <h1>Good morning</h1>
         <div class="page-subtitle">Friday, September 18 — here's what's happening today.</div>
       </div>
+      <div class="today-pill" id="today-pill"></div>
     </div>
 
+    <div class="quick-actions" id="quick-actions"></div>
+
     <div class="stats-row" id="stats-row"></div>
+
+    <div class="card-header" style="margin-bottom:12px;">
+      <h2>Recently viewed</h2>
+    </div>
+    <div class="recent-scroll" id="recent-scroll"></div>
 
     <div class="two-col">
       <div class="card">

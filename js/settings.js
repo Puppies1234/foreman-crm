@@ -39,9 +39,14 @@
 
   function updatePreview() {
     var shades = theme.deriveShades(current);
+    var bar = theme.sidebarStops(current);
     preview.style.setProperty('--preview-pine', shades.base);
     preview.style.setProperty('--preview-pine-dark', shades.dark);
     preview.style.setProperty('--preview-pine-tint', shades.tint);
+    // The preview sidebar shows the picked accent as the dark pine gradient it
+    // becomes in the app; the active nav item stays gold, as it is everywhere.
+    preview.style.setProperty('--preview-sidebar-top', bar.top);
+    preview.style.setProperty('--preview-sidebar-bottom', bar.bottom);
     handle.style.background = shades.base;
     saveConfirm.hidden = true;
   }
@@ -98,7 +103,7 @@
 
   swatchButtons.forEach(function (btn) {
     var hsl = theme.hexToHsl(btn.getAttribute('data-hex'));
-    btn.style.background = btn.getAttribute('data-hex');
+    btn.style.backgroundColor = btn.getAttribute('data-hex');
     btn.addEventListener('click', function () {
       current = { h: hsl.h, s: hsl.s, l: hsl.l };
       syncControls();
@@ -108,8 +113,8 @@
   // --- Calendar colors / contact status colors ---
   var PRESET_SWATCHES = [
     { hex: '#1F5C4C', title: 'Pine green' },
-    { hex: '#A67C2E', title: 'Amber' },
-    { hex: '#B65C3B', title: 'Terracotta' },
+    { hex: '#C9A227', title: 'Gold' },
+    { hex: '#AF5636', title: 'Terracotta' },
     { hex: '#1E3A5F', title: 'Navy' },
     { hex: '#3E5C76', title: 'Slate blue' },
     { hex: '#6D2436', title: 'Burgundy' }
@@ -142,7 +147,7 @@
       var swatchBtn = document.createElement('button');
       swatchBtn.type = 'button';
       swatchBtn.className = 'swatch-btn';
-      swatchBtn.style.background = preset.hex;
+      swatchBtn.style.backgroundColor = preset.hex;
       swatchBtn.title = preset.title;
       swatchBtn.addEventListener('click', function () {
         colorInput.value = preset.hex;

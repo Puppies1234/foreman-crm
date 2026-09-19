@@ -10,16 +10,16 @@
   // Nia Brackett) — matches js/data.js and js/calendar.js's tech slugs.
   var TECH_DEFAULTS = {
     "Ray Dunmore": "#1F5C4C",
-    "Kim Osei": "#A67C2E",
-    "Nia Brackett": "#B65C3B"
+    "Kim Osei": "#C9A227",
+    "Nia Brackett": "#AF5636"
   };
 
   var STATUS_DEFAULTS = {
     "New Lead": "#6E695C",
-    "Qualified": "#A67C2E",
+    "Qualified": "#C9A227",
     "Scheduled": "#1F5C4C",
     "Quoted": "#163F35",
-    "Completed": "#163F35"
+    "Completed": "#0E2A22"
   };
 
   // Matches the existing badge-* class suffixes in css/styles.css.
@@ -31,13 +31,10 @@
     "Completed": "completed"
   };
 
-  var STATUS_STYLES = {
-    "New Lead": "tint",
-    "Qualified": "tint",
-    "Scheduled": "tint",
-    "Quoted": "tint",
-    "Completed": "solid"
-  };
+  // Text colours layered on top of a gradient surface. Gold and other light
+  // accents take the dark pine ink; deep accents take the paper tone.
+  var INK_DARK = '#17301F';
+  var INK_LIGHT = '#FBFAF6';
 
   function hslToHex(h, s, l) {
     s /= 100;
@@ -82,12 +79,67 @@
     };
   }
 
+  // Gradient stops for any accent: a lifted top, the colour itself, a
+  // deepened foot. Mirrors the proportions of the default gold ramp
+  // (#E8C96E -> #C9A227 -> #A87F22) so custom colours read the same way.
+  function gradStops(hsl) {
+    return {
+      top: hslToHex(hsl.h, hsl.s, Math.min(hsl.l + 16, 96)),
+      mid: hslToHex(hsl.h, hsl.s, hsl.l),
+      bottom: hslToHex(hsl.h, hsl.s, Math.max(hsl.l - 8, 5))
+    };
+  }
+
+  function gradCss(hsl) {
+    var g = gradStops(hsl);
+    return 'linear-gradient(180deg, ' + g.top + ' 0%, ' + g.mid + ' 52%, ' + g.bottom + ' 100%)';
+  }
+
+  // The dark pine gradient behind the sidebar. At the default accent this
+  // resolves to #174539 -> #0E2A23, i.e. the intended #17453A -> #0E2A22.
+  function sidebarStops(hsl) {
+    return {
+      top: hslToHex(hsl.h, hsl.s, Math.max(hsl.l - 6, 6)),
+      bottom: hslToHex(hsl.h, hsl.s, Math.max(hsl.l - 13, 3))
+    };
+  }
+
+  function srgbToLinear(channel) {
+    var c = channel / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  }
+
+  function luminance(hex) {
+    hex = hex.replace('#', '');
+    return 0.2126 * srgbToLinear(parseInt(hex.substring(0, 2), 16)) +
+           0.7152 * srgbToLinear(parseInt(hex.substring(2, 4), 16)) +
+           0.0722 * srgbToLinear(parseInt(hex.substring(4, 6), 16));
+  }
+
+  function contrast(a, b) {
+    var la = luminance(a), lb = luminance(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+
+  // Whichever ink reads better on this surface, so no accent ends up as
+  // low-contrast text - and gold never lands on a light background.
+  function inkOn(hex) {
+    return contrast(hex, INK_DARK) >= contrast(hex, INK_LIGHT) ? INK_DARK : INK_LIGHT;
+  }
+
   function applyAccent(hsl) {
     var shades = deriveShades(hsl);
+    var stops = gradStops(hsl);
+    var bar = sidebarStops(hsl);
     var root = document.documentElement.style;
     root.setProperty('--pine', shades.base);
     root.setProperty('--pine-dark', shades.dark);
     root.setProperty('--pine-tint', shades.tint);
+    root.setProperty('--pine-lift', stops.top);
+    root.setProperty('--pine-deep', stops.bottom);
+    root.setProperty('--pine-ink', inkOn(shades.base));
+    root.setProperty('--sidebar-top', bar.top);
+    root.setProperty('--sidebar-bottom', bar.bottom);
   }
 
   function getAccent() {
@@ -142,6 +194,8 @@
       var slug = techSlug(name);
       root.setProperty('--tech-' + slug + '-base', shades.base);
       root.setProperty('--tech-' + slug + '-tint', shades.tint);
+      root.setProperty('--tech-' + slug + '-grad', gradCss(hexToHsl(hex)));
+      root.setProperty('--tech-' + slug + '-fg', inkOn(shades.base));
     });
   }
 
@@ -149,15 +203,10 @@
     var root = document.documentElement.style;
     Object.keys(STATUS_DEFAULTS).forEach(function (status) {
       var hex = (map && map[status]) || STATUS_DEFAULTS[status];
-      var shades = deriveShades(hexToHsl(hex));
+      var hsl = hexToHsl(hex);
       var slug = STATUS_SLUGS[status];
-      if (STATUS_STYLES[status] === 'solid') {
-        root.setProperty('--status-' + slug + '-bg', shades.dark);
-        root.setProperty('--status-' + slug + '-fg', '#FBFAF6');
-      } else {
-        root.setProperty('--status-' + slug + '-bg', shades.tint);
-        root.setProperty('--status-' + slug + '-fg', shades.base);
-      }
+      root.setProperty('--status-' + slug + '-grad', gradCss(hsl));
+      root.setProperty('--status-' + slug + '-fg', inkOn(hslToHex(hsl.h, hsl.s, hsl.l)));
     });
   }
 
@@ -178,6 +227,10 @@
     hslToHex: hslToHex,
     hexToHsl: hexToHsl,
     deriveShades: deriveShades,
+    gradStops: gradStops,
+    gradCss: gradCss,
+    sidebarStops: sidebarStops,
+    inkOn: inkOn,
     getAccent: getAccent,
     saveAccent: saveAccent,
     getTechColors: getTechColors,

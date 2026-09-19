@@ -14,49 +14,86 @@
     <nav class="nav-links">
       <a class="nav-link" href="index.html">Dashboard</a>
       <a class="nav-link" href="calendar.html">Calendar</a>
-      <a class="nav-link active" href="contact.html?job=j1">Contacts</a>
+      <a class="nav-link active" href="contact.html?contact=c1">Contacts</a>
       <a class="nav-link" href="settings.html">Settings</a>
     </nav>
     <div class="sidebar-footer">Foreman Home Services<br>Austin, TX</div>
   </aside>
 
   <main class="main">
-    <div class="page-header">
-      <div>
-        <h1 id="page-title">—</h1>
-        <div class="page-subtitle" id="page-subtitle">—</div>
+    <!-- Contact profile: this contact's info + an index of their jobs only.
+         No message/call/document/photo content from any job lives here. -->
+    <div id="profile-view">
+      <div class="page-header">
+        <div>
+          <h1 id="profile-name">—</h1>
+          <div class="page-subtitle" id="profile-subtitle">—</div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div>
+          <div class="card">
+            <div class="card-header"><h2>Contact</h2></div>
+            <div id="profile-contact-body"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="card-header"><h2>Jobs</h2></div>
+            <div id="profile-jobs-list"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="detail-grid">
-      <div>
-        <div class="card">
-          <div class="card-header"><h2>Contact</h2></div>
-          <div id="contact-card-body"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><h2>Other jobs</h2></div>
-          <div class="job-list-mini" id="other-jobs"></div>
+    <!-- Job detail: one job's own info, plus its own Messages, Calls &
+         Transcripts, Documents and Photos — nothing from any other job. -->
+    <div id="job-view" hidden>
+      <div class="page-header">
+        <div>
+          <a class="card-eyebrow" id="job-breadcrumb" href="#">← —</a>
+          <h1 id="job-title">—</h1>
+          <div class="page-subtitle" id="job-subtitle">—</div>
         </div>
       </div>
 
-      <div>
-        <div class="card">
-          <div class="card-header"><h2>Job</h2></div>
-          <div class="pipeline" id="pipeline"></div>
-          <div id="job-card-body"></div>
-
-          <div class="card-eyebrow" style="margin-top:16px;">Intake notes</div>
-          <div class="notes-block" id="intake-notes"></div>
-
-          <div class="card-eyebrow" style="margin-top:16px;">Appointment</div>
-          <div class="notes-block" id="appt-summary"></div>
+      <div class="detail-grid">
+        <div>
+          <div class="card">
+            <div class="card-header"><h2>Contact</h2></div>
+            <div id="job-contact-body"></div>
+          </div>
         </div>
 
-        <div class="card" id="call-section"></div>
+        <div>
+          <div class="card">
+            <div class="card-header"><h2>Job</h2></div>
+            <div class="pipeline" id="pipeline"></div>
+            <div id="job-card-body"></div>
 
-        <div class="card" id="followup-section"></div>
+            <div class="card-eyebrow" style="margin-top:16px;">Intake notes</div>
+            <div class="notes-block" id="intake-notes"></div>
+
+            <div class="card-eyebrow" style="margin-top:16px;">Appointment</div>
+            <div class="notes-block" id="appt-summary"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h2>Job activity</h2></div>
+            <div class="tab-bar" id="job-tabs">
+              <button type="button" class="tab-btn active" data-tab="messages">Messages</button>
+              <button type="button" class="tab-btn" data-tab="calls">Calls &amp; Transcripts</button>
+              <button type="button" class="tab-btn" data-tab="documents">Documents</button>
+              <button type="button" class="tab-btn" data-tab="photos">Photos</button>
+            </div>
+            <div class="job-tab-panel" data-panel="messages" id="panel-messages"></div>
+            <div class="job-tab-panel" data-panel="calls" id="panel-calls" hidden></div>
+            <div class="job-tab-panel" data-panel="documents" id="panel-documents" hidden></div>
+            <div class="job-tab-panel" data-panel="photos" id="panel-photos" hidden></div>
+          </div>
+        </div>
       </div>
     </div>
   </main>

@@ -13,7 +13,74 @@
   --terracotta-tint: #F5E5DE;
   --amber: #A67C2E;
   --amber-tint: #F3E9D3;
-  --shadow: 0 1px 2px rgba(33, 31, 27, 0.04), 0 4px 16px rgba(33, 31, 27, 0.05);
+
+  /* Gold — the fixed brand accent for CTAs, the active nav item, avatars and
+     pills. Always carries --gold-ink on top; never used as text on a light
+     surface. */
+  --gold-light: #E8C96E;
+  --gold: #C9A227;
+  --gold-deep: #A87F22;
+  --gold-ink: #17301F;
+  --gold-grad: linear-gradient(180deg, var(--gold-light) 0%, var(--gold) 52%, var(--gold-deep) 100%);
+
+  /* Deepened terracotta for gradient chips: #B65C3B only reached 4.39:1
+     against the paper ink, this clears 4.5:1. */
+  --terracotta-chip: #AF5636;
+  --terracotta-grad: linear-gradient(180deg, #C9704A 0%, var(--terracotta-chip) 52%, #954829 100%);
+  --gray-grad: linear-gradient(180deg, #999385 0%, #6F6A5D 52%, #59554A 100%);
+
+  /* Rust — a deeper, more alarming red than terracotta, reserved for the
+     Dashboard's Priority stat card so it reads as "needs attention now"
+     against the calm pine/gold of the rest of the row. */
+  --rust-light: #C0603F;
+  --rust: #A8402A;
+  --rust-deep: #7A2E1C;
+  --rust-grad: linear-gradient(180deg, var(--rust-light) 0%, var(--rust) 52%, var(--rust-deep) 100%);
+  --shadow-rust: 0 1px 2px rgba(122, 46, 28, 0.24), 0 5px 14px -4px rgba(168, 64, 42, 0.42);
+
+  /* Pine gradient + sidebar stops. js/theme.js overwrites all of these from
+     the saved accent, so a custom accent picked in Settings gets exactly the
+     same gradient-and-gloss treatment as this default. */
+  --pine-lift: #33997E;
+  --pine-deep: #143D32;
+  --pine-ink: #FBFAF6;
+  --pine-grad: linear-gradient(180deg, var(--pine-lift) 0%, var(--pine) 52%, var(--pine-deep) 100%);
+  --sidebar-top: #174539;
+  --sidebar-bottom: #0E2A23;
+
+  /* Gloss — a white highlight fading out by ~44% down, layered *over* a colour
+     gradient so the surface reads as lit from above rather than flat. */
+  --gloss: linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.13) 22%, rgba(255,255,255,0) 44%);
+  --gloss-soft: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.07) 20%, rgba(255,255,255,0) 42%);
+  --sheen: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 220px);
+
+  /* Elevation — layered shadows stand in for the old flat 1px borders. */
+  --shadow: 0 1px 2px rgba(33, 31, 27, 0.05), 0 6px 20px -4px rgba(33, 31, 27, 0.10);
+  --shadow-raised: 0 2px 4px rgba(33, 31, 27, 0.07), 0 14px 30px -10px rgba(33, 31, 27, 0.16);
+  --shadow-chip: 0 1px 1px rgba(33, 31, 27, 0.10), 0 2px 5px -1px rgba(33, 31, 27, 0.13);
+  --shadow-gold: 0 1px 2px rgba(23, 48, 31, 0.20), 0 5px 14px -4px rgba(168, 127, 34, 0.40);
+  --shadow-pine: 0 1px 2px rgba(20, 61, 50, 0.22), 0 5px 14px -4px rgba(31, 92, 76, 0.34);
+  --shadow-sidebar: 1px 0 0 rgba(14, 42, 34, 0.20), 7px 0 26px -8px rgba(14, 42, 34, 0.32);
+  --shadow-topbar: 0 1px 0 rgba(228, 223, 210, 0.9), 0 10px 20px -14px rgba(33, 31, 27, 0.26);
+
+  /* Shared pill-button radius — quick actions, .btn, and the calendar's
+     stand-alone action buttons all round to this so they read as one family. */
+  --radius-pill: 18px;
+}
+
+/* Every glossy surface in the app is this one recipe: gloss layer first,
+   colour gradient underneath. Applied via background-image so a single
+   declaration swaps the colour track. */
+.is-glossy-gold {
+  background-image: var(--gloss), var(--gold-grad);
+  color: var(--gold-ink);
+  box-shadow: var(--shadow-gold);
+}
+
+.is-glossy-pine {
+  background-image: var(--gloss), var(--pine-grad);
+  color: var(--pine-ink);
+  box-shadow: var(--shadow-pine);
 }
 
 * { box-sizing: border-box; }
@@ -50,12 +117,16 @@ img { max-width: 100%; }
 .sidebar {
   width: 220px;
   flex-shrink: 0;
-  background: var(--pine-dark);
+  background-color: var(--sidebar-bottom);
+  background-image: var(--sheen), linear-gradient(180deg, var(--sidebar-top) 0%, var(--sidebar-bottom) 100%);
   color: #EFEAE0;
   padding: 28px 20px;
   display: flex;
   flex-direction: column;
   gap: 32px;
+  position: relative;
+  z-index: 2;
+  box-shadow: var(--shadow-sidebar);
 }
 
 .brand {
@@ -72,7 +143,8 @@ img { max-width: 100%; }
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #C9A24B;
+  background-image: var(--gloss), var(--gold-grad);
+  box-shadow: var(--shadow-gold);
   display: inline-block;
 }
 
@@ -93,9 +165,17 @@ img { max-width: 100%; }
 
 .nav-link:hover { background: rgba(255,255,255,0.06); color: #FBFAF6; }
 
+/* Gold is the active-nav treatment, with dark pine ink for contrast. */
 .nav-link.active {
-  background: rgba(255,255,255,0.1);
-  color: #FBFAF6;
+  background-image: var(--gloss), var(--gold-grad);
+  color: var(--gold-ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-gold);
+}
+
+.nav-link.active:hover {
+  background-image: var(--gloss), var(--gold-grad);
+  color: var(--gold-ink);
 }
 
 .sidebar-footer {
@@ -112,13 +192,17 @@ img { max-width: 100%; }
   padding: 36px 44px 60px;
 }
 
+/* No topbar element exists in the markup, so the page header carries the
+   topbar shadow. padding + margin still total the original 28px of space. */
 .page-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 28px;
+  padding-bottom: 18px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
   gap: 12px;
+  box-shadow: var(--shadow-topbar);
 }
 
 .page-header h1 {
@@ -135,7 +219,6 @@ img { max-width: 100%; }
 
 .card {
   background: var(--paper-raised);
-  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 22px;
   box-shadow: var(--shadow);
@@ -162,6 +245,209 @@ img { max-width: 100%; }
   color: var(--pine);
 }
 
+/* --- Today strip (Dashboard) --- */
+
+.today-strip {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: var(--paper-raised);
+  border-radius: 20px;
+  padding: 26px 28px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-topbar), var(--shadow);
+}
+
+/* Soft radial glow bleeding off the top-right corner, behind the text. */
+.today-strip::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  right: -90px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 32%, rgba(201, 162, 39, 0.30) 0%, rgba(31, 92, 76, 0.16) 46%, rgba(31, 92, 76, 0) 72%);
+  pointer-events: none;
+}
+
+.today-strip-text { position: relative; z-index: 1; }
+.today-strip-text h1 { font-size: 1.9rem; }
+
+/* Appointment-count + confirmation-status pill. Pine when the day is settled,
+   terracotta when something still needs confirming — same semantics as the
+   "needs your review" flag elsewhere in the app. */
+.today-pill {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background-image: var(--gloss), var(--pine-grad);
+  color: var(--pine-ink);
+  box-shadow: var(--shadow-pine);
+}
+
+.today-pill.attention {
+  background-image: var(--gloss), var(--terracotta-grad);
+  color: #FBFAF6;
+  box-shadow: 0 1px 2px rgba(33, 31, 27, 0.18), 0 5px 14px -4px rgba(175, 86, 54, 0.42);
+}
+
+.today-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+/* --- Quick actions --- */
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 16px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.quick-action:hover {
+  box-shadow: var(--shadow-raised);
+  transform: translateY(-1px);
+}
+
+.quick-action-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pine-tint);
+  color: var(--pine-dark);
+}
+
+.quick-action-icon svg { width: 17px; height: 17px; display: block; }
+
+/* Primary quick action (New Job): the tile itself carries the glossy gold
+   gradient instead of a separate icon badge. */
+.quick-action.primary {
+  background-image: var(--gloss), var(--gold-grad);
+  color: var(--gold-ink);
+  box-shadow: var(--shadow-gold);
+}
+
+.quick-action.primary:hover {
+  background-image: var(--gloss), linear-gradient(180deg, var(--gold) 0%, var(--gold-deep) 100%);
+}
+
+.quick-action.primary .quick-action-icon {
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--gold-ink);
+}
+
+.quick-action.primary .quick-action-icon svg { width: 22px; height: 22px; }
+
+/* --- Recently viewed --- */
+
+.recent-scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 12px;
+  margin-bottom: 4px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.recent-scroll::-webkit-scrollbar { height: 6px; }
+.recent-scroll::-webkit-scrollbar-track { background: transparent; }
+.recent-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 100px; }
+
+.recent-card {
+  position: relative;
+  flex: 0 0 250px;
+  width: 250px;
+  scroll-snap-align: start;
+  background: var(--paper-raised);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.recent-card:hover { box-shadow: var(--shadow-raised); }
+
+.recent-card-band {
+  height: 44px;
+  background-image: var(--gloss-soft), var(--pine-grad);
+}
+
+.recent-card-body {
+  padding: 14px 16px 16px;
+  padding-right: 34px;
+}
+
+.recent-card-name {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.recent-card-meta {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.recent-card-address {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.recent-card .row-chevron {
+  position: absolute;
+  top: 58px;
+  right: 14px;
+}
+
 /* --- Stats row --- */
 
 .stats-row {
@@ -172,25 +458,84 @@ img { max-width: 100%; }
 }
 
 .stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background: var(--paper-raised);
-  border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 18px 20px;
+  padding: 14px 16px;
   box-shadow: var(--shadow);
+}
+
+.stat-card-body { min-width: 0; }
+
+/* Glossy icon badge beside each stat number. */
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-image: var(--gloss), var(--pine-grad);
+  color: var(--pine-ink);
+  box-shadow: var(--shadow-pine);
+}
+
+.stat-icon.gold {
+  background-image: var(--gloss), var(--gold-grad);
+  color: var(--gold-ink);
+  box-shadow: var(--shadow-gold);
+}
+
+.stat-icon.rust {
+  background-image: var(--gloss), var(--rust-grad);
+  color: #FBFAF6;
+  box-shadow: var(--shadow-rust);
+}
+
+.stat-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* Available for gold identity chips wherever initials get rendered. */
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Public Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+  background-image: var(--gloss), var(--gold-grad);
+  color: var(--gold-ink);
+  box-shadow: var(--shadow-gold);
 }
 
 .stat-value {
   font-family: 'Fraunces', serif;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--pine-dark);
-  line-height: 1.1;
+  line-height: 1.15;
 }
+
+.stat-value.rust { color: var(--rust); }
 
 .stat-label {
   color: var(--ink-muted);
-  font-size: 0.82rem;
-  margin-top: 6px;
+  font-size: 0.74rem;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* --- Two column layout --- */
@@ -202,14 +547,39 @@ img { max-width: 100%; }
   align-items: start;
 }
 
+/* --- Shared clickable-row furniture ---
+   A small leading colour dot + trailing chevron, used on any row across the
+   app that links out to a contact/job: Today's Schedule, Recently Viewed,
+   Calendar's unscheduled leads, and Contacts' other-jobs list. */
+
+.row-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-chip);
+}
+
+.row-chevron {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--ink-muted);
+}
+
 /* --- Schedule list --- */
 
 .schedule-item {
   display: flex;
-  gap: 14px;
-  padding: 12px 0;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  margin: 0 -10px;
+  border-radius: 10px;
   border-bottom: 1px solid var(--line);
 }
+
+a.schedule-item:hover { background: var(--paper); }
 
 .schedule-item:last-child { border-bottom: none; }
 
@@ -235,6 +605,8 @@ img { max-width: 100%; }
   margin-top: 2px;
 }
 
+.schedule-item .badge { flex-shrink: 0; }
+
 /* --- Activity feed --- */
 
 .activity-item {
@@ -250,12 +622,15 @@ img { max-width: 100%; }
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--pine);
+  background-image: var(--gloss), var(--pine-grad);
+  box-shadow: var(--shadow-chip);
   margin-top: 6px;
   flex-shrink: 0;
 }
 
-.activity-item.needs-review .activity-dot { background: var(--terracotta); }
+.activity-item.needs-review .activity-dot {
+  background-image: var(--gloss), var(--terracotta-grad);
+}
 
 .activity-body { flex: 1; min-width: 0; }
 
@@ -278,6 +653,9 @@ img { max-width: 100%; }
 
 /* --- Badges --- */
 
+/* Pills are glossy gradient chips. Each status/tech keeps its own colour from
+   Settings; js/theme.js supplies the gradient and picks the higher-contrast
+   ink, so gold never ends up as text on a light fill. */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -287,19 +665,21 @@ img { max-width: 100%; }
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  box-shadow: var(--shadow-chip);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
-.badge-lead { background: var(--status-lead-bg, #EDEAE1); color: var(--status-lead-fg, var(--ink-muted)); }
-.badge-qualified { background: var(--status-qualified-bg, var(--amber-tint)); color: var(--status-qualified-fg, var(--amber)); }
-.badge-scheduled { background: var(--status-scheduled-bg, var(--pine-tint)); color: var(--status-scheduled-fg, var(--pine)); }
-.badge-quoted { background: var(--status-quoted-bg, #DCEAE4); color: var(--status-quoted-fg, var(--pine-dark)); }
-.badge-completed { background: var(--status-completed-bg, var(--pine-dark)); color: var(--status-completed-fg, #EFEAE0); }
+.badge-lead { background-image: var(--gloss), var(--status-lead-grad, var(--gray-grad)); color: var(--status-lead-fg, #FBFAF6); }
+.badge-qualified { background-image: var(--gloss), var(--status-qualified-grad, var(--gold-grad)); color: var(--status-qualified-fg, var(--gold-ink)); }
+.badge-scheduled { background-image: var(--gloss), var(--status-scheduled-grad, var(--pine-grad)); color: var(--status-scheduled-fg, var(--pine-ink)); }
+.badge-quoted { background-image: var(--gloss), var(--status-quoted-grad, var(--pine-grad)); color: var(--status-quoted-fg, #FBFAF6); }
+.badge-completed { background-image: var(--gloss), var(--status-completed-grad, var(--pine-grad)); color: var(--status-completed-fg, #FBFAF6); }
 
-.badge-urgent { background: var(--terracotta-tint); color: var(--terracotta); }
-.badge-medium { background: var(--amber-tint); color: var(--amber); }
-.badge-low { background: #EDEAE1; color: var(--ink-muted); }
+.badge-urgent { background-image: var(--gloss), var(--terracotta-grad); color: #FBFAF6; }
+.badge-medium { background-image: var(--gloss), var(--gold-grad); color: var(--gold-ink); }
+.badge-low { background-image: var(--gloss), var(--gray-grad); color: #FBFAF6; }
 
-.badge-review { background: var(--terracotta-tint); color: var(--terracotta); }
+.badge-review { background-image: var(--gloss), var(--terracotta-grad); color: #FBFAF6; }
 
 /* --- Needs review flag --- */
 
@@ -317,9 +697,9 @@ img { max-width: 100%; }
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-pill);
   font-size: 0.86rem;
   font-weight: 600;
   border: 1px solid transparent;
@@ -327,11 +707,26 @@ img { max-width: 100%; }
   font-family: inherit;
 }
 
-.btn-primary { background: var(--pine); color: #FBFAF6; }
-.btn-primary:hover { background: var(--pine-dark); }
+.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 
-.btn-secondary { background: transparent; color: var(--pine-dark); border-color: var(--line); }
-.btn-secondary:hover { background: var(--pine-tint); }
+.btn-primary {
+  background-image: var(--gloss), var(--gold-grad);
+  color: var(--gold-ink);
+  box-shadow: var(--shadow-gold);
+}
+
+.btn-primary:hover {
+  background-image: var(--gloss), linear-gradient(180deg, var(--gold) 0%, var(--gold-deep) 100%);
+  box-shadow: var(--shadow-raised);
+}
+
+.btn-secondary {
+  background: var(--paper-raised);
+  color: var(--pine-dark);
+  box-shadow: var(--shadow);
+}
+
+.btn-secondary:hover { background: var(--pine-tint); box-shadow: var(--shadow-raised); }
 
 .btn-row { display: flex; gap: 10px; margin-top: 16px; }
 
@@ -358,21 +753,70 @@ img { max-width: 100%; }
 .info-label { color: var(--ink-muted); }
 .info-value { font-weight: 500; text-align: right; }
 
-.job-list-mini { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+/* --- Job activity tabs (Messages / Calls / Documents / Photos) --- */
 
-.job-list-mini a {
+.job-tab-panel { margin-top: 4px; }
+
+/* --- Documents --- */
+
+.doc-list { display: flex; flex-direction: column; gap: 8px; }
+
+.doc-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 9px 11px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  font-size: 0.83rem;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
   background: var(--paper);
+  box-shadow: var(--shadow-chip);
 }
 
-.job-list-mini a:hover { border-color: var(--pine); }
-.job-list-mini a.current { border-color: var(--pine); background: var(--pine-tint); }
+.doc-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pine-tint);
+  color: var(--pine-dark);
+}
+
+.doc-icon svg { width: 16px; height: 16px; }
+
+.doc-body { flex: 1; min-width: 0; }
+.doc-name { font-weight: 600; font-size: 0.87rem; }
+.doc-meta { color: var(--ink-muted); font-size: 0.78rem; margin-top: 2px; }
+
+/* --- Photos (mocked — no real files, so tiles are placeholders) --- */
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.photo-tile {
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px rgba(228, 223, 210, 0.75), var(--shadow-chip);
+}
+
+.photo-tile-placeholder {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pine-tint);
+  color: var(--pine);
+}
+
+.photo-tile-placeholder svg { width: 26px; height: 26px; }
+
+.photo-tile-caption { padding: 8px 10px 10px; }
+.photo-tile-caption .doc-name { font-size: 0.82rem; }
 
 .pipeline {
   display: flex;
@@ -392,11 +836,16 @@ img { max-width: 100%; }
 }
 
 .pipeline-step.done { background: var(--pine-tint); color: var(--pine); }
-.pipeline-step.current { background: var(--pine); color: #FBFAF6; }
+
+.pipeline-step.current {
+  background-image: var(--gloss), var(--pine-grad);
+  color: var(--pine-ink);
+  box-shadow: var(--shadow-pine);
+}
 
 .notes-block {
   background: var(--paper);
-  border: 1px solid var(--line);
+  box-shadow: inset 0 0 0 1px rgba(228, 223, 210, 0.75), var(--shadow-chip);
   border-radius: 10px;
   padding: 14px 16px;
   font-size: 0.87rem;
@@ -431,8 +880,8 @@ img { max-width: 100%; }
 .transcript-line.ai .transcript-speaker { color: var(--pine); }
 
 .transcript-bubble {
-  background: var(--paper);
-  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-chip);
   border-radius: 10px;
   padding: 8px 12px;
   flex: 1;
@@ -440,7 +889,7 @@ img { max-width: 100%; }
 
 .followup-content {
   background: var(--paper);
-  border: 1px solid var(--line);
+  box-shadow: inset 0 0 0 1px rgba(228, 223, 210, 0.75), var(--shadow-chip);
   border-radius: 10px;
   padding: 14px 16px;
   font-size: 0.88rem;
@@ -495,8 +944,9 @@ img { max-width: 100%; }
 .view-toggle-btn:hover:not(.active) { background: rgba(31, 92, 76, 0.1); }
 
 .view-toggle-btn.active {
-  background: var(--pine);
-  color: #FBFAF6;
+  background-image: var(--gloss), var(--pine-grad);
+  color: var(--pine-ink);
+  box-shadow: var(--shadow-pine);
 }
 
 .nav-controls {
@@ -509,8 +959,9 @@ img { max-width: 100%; }
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   background: var(--paper-raised);
+  box-shadow: var(--shadow-chip);
   color: var(--pine-dark);
   font-size: 1.05rem;
   line-height: 1;
@@ -524,9 +975,10 @@ img { max-width: 100%; }
 
 .nav-today-btn {
   padding: 7px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
   background: var(--paper-raised);
+  box-shadow: var(--shadow-chip);
   font-family: 'Public Sans', sans-serif;
   font-weight: 600;
   font-size: 0.8rem;
@@ -564,7 +1016,6 @@ img { max-width: 100%; }
 
 .day-column {
   background: var(--paper-raised);
-  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px;
   box-shadow: var(--shadow);
@@ -658,13 +1109,14 @@ img { max-width: 100%; }
   font-size: 0.74rem;
   line-height: 1.35;
   border-left: 3px solid var(--pine);
-  background: var(--pine-tint);
-  box-shadow: 0 1px 2px rgba(33, 31, 27, 0.06);
+  background-color: var(--pine-tint);
+  background-image: var(--gloss-soft);
+  box-shadow: var(--shadow-chip);
 }
 
-.appt-block.tech-ray { border-left-color: var(--tech-ray-base, var(--pine)); background: var(--tech-ray-tint, var(--pine-tint)); }
-.appt-block.tech-kim { border-left-color: var(--tech-kim-base, var(--amber)); background: var(--tech-kim-tint, var(--amber-tint)); }
-.appt-block.tech-nia { border-left-color: var(--tech-nia-base, var(--terracotta)); background: var(--tech-nia-tint, var(--terracotta-tint)); }
+.appt-block.tech-ray { border-left-color: var(--tech-ray-base, var(--pine)); background-color: var(--tech-ray-tint, var(--pine-tint)); }
+.appt-block.tech-kim { border-left-color: var(--tech-kim-base, var(--gold)); background-color: var(--tech-kim-tint, var(--amber-tint)); }
+.appt-block.tech-nia { border-left-color: var(--tech-nia-base, var(--terracotta-chip)); background-color: var(--tech-nia-tint, var(--terracotta-tint)); }
 
 .appt-block .appt-time {
   font-weight: 700;
@@ -727,7 +1179,7 @@ img { max-width: 100%; }
 
 .month-cell {
   background: var(--paper-raised);
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   border-radius: 12px;
   padding: 10px 12px;
   cursor: pointer;
@@ -769,7 +1221,8 @@ img { max-width: 100%; }
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--pine);
+  background-image: var(--gloss), var(--pine-grad);
+  box-shadow: var(--shadow-chip);
 }
 
 .tech-legend {
@@ -783,20 +1236,33 @@ img { max-width: 100%; }
 
 .tech-legend-item { display: flex; align-items: center; gap: 6px; }
 
-.tech-dot { width: 9px; height: 9px; border-radius: 50%; }
-.tech-dot.tech-ray { background: var(--tech-ray-base, var(--pine)); }
-.tech-dot.tech-kim { background: var(--tech-kim-base, var(--amber)); }
-.tech-dot.tech-nia { background: var(--tech-nia-base, var(--terracotta)); }
+.tech-dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: var(--shadow-chip); }
+.tech-dot.tech-ray { background-image: var(--gloss), var(--tech-ray-grad, var(--pine-grad)); }
+.tech-dot.tech-kim { background-image: var(--gloss), var(--tech-kim-grad, var(--gold-grad)); }
+.tech-dot.tech-nia { background-image: var(--gloss), var(--tech-nia-grad, var(--terracotta-grad)); }
 
 .unscheduled-item {
-  border: 1px solid var(--line);
+  position: relative;
   border-radius: 10px;
-  padding: 11px 12px;
+  padding: 11px 34px 11px 12px;
   margin-bottom: 10px;
-  background: var(--paper);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-chip);
 }
 
-.unscheduled-title { font-weight: 600; font-size: 0.87rem; }
+.unscheduled-item .row-chevron {
+  position: absolute;
+  top: 13px;
+  right: 12px;
+}
+
+.unscheduled-title {
+  font-weight: 600;
+  font-size: 0.87rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .unscheduled-meta { color: var(--ink-muted); font-size: 0.78rem; margin-top: 3px; }
 .unscheduled-item .badge { margin-top: 8px; }
 
@@ -807,18 +1273,21 @@ img { max-width: 100%; }
   padding: 8px 0;
 }
 
-/* --- Settings page --- */
+/* --- Tab bar (shared by Settings' tabs and a job's activity tabs) --- */
 
-.settings-tabs {
+.settings-tabs, .tab-bar {
   display: inline-flex;
   background: var(--pine-tint);
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
-.settings-tab-btn {
+.tab-bar { margin-bottom: 16px; }
+
+.settings-tab-btn, .tab-btn {
   padding: 8px 18px;
   border-radius: 8px;
   font-family: 'Public Sans', sans-serif;
@@ -830,12 +1299,15 @@ img { max-width: 100%; }
   cursor: pointer;
 }
 
-.settings-tab-btn:hover:not(.active) { background: rgba(31, 92, 76, 0.1); }
+.settings-tab-btn:hover:not(.active), .tab-btn:hover:not(.active) { background: rgba(31, 92, 76, 0.1); }
 
-.settings-tab-btn.active {
-  background: var(--pine);
-  color: #FBFAF6;
+.settings-tab-btn.active, .tab-btn.active {
+  background-image: var(--gloss), var(--pine-grad);
+  color: var(--pine-ink);
+  box-shadow: var(--shadow-pine);
 }
+
+/* --- Settings page --- */
 
 .design-layout {
   display: grid;
@@ -923,13 +1395,14 @@ img { max-width: 100%; }
   height: 30px;
   border-radius: 50%;
   border: 2px solid var(--paper-raised);
-  box-shadow: 0 0 0 1px var(--line);
+  background-image: var(--gloss-soft);
+  box-shadow: 0 0 0 1px rgba(228, 223, 210, 0.9), var(--shadow-chip);
   cursor: pointer;
   padding: 0;
 }
 
 .swatch-btn:hover {
-  box-shadow: 0 0 0 2px var(--ink-muted);
+  box-shadow: 0 0 0 2px var(--ink-muted), var(--shadow-chip);
 }
 
 .save-confirm {
@@ -975,7 +1448,7 @@ img { max-width: 100%; }
   height: 32px;
   padding: 0;
   border: 2px solid var(--paper-raised);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px rgba(228, 223, 210, 0.9), var(--shadow-chip);
   border-radius: 8px;
   cursor: pointer;
   background: none;
@@ -999,13 +1472,15 @@ img { max-width: 100%; }
   gap: 24px;
   padding: 20px;
   background: var(--paper);
-  border: 1px solid var(--line);
+  box-shadow: inset 0 0 0 1px rgba(228, 223, 210, 0.75), var(--shadow-chip);
   border-radius: 14px;
 }
 
 .theme-preview-sidebar {
   width: 168px;
-  background: var(--preview-pine-dark, var(--pine-dark));
+  background-color: var(--preview-sidebar-bottom, var(--sidebar-bottom));
+  background-image: var(--gloss-soft), linear-gradient(180deg, var(--preview-sidebar-top, var(--sidebar-top)) 0%, var(--preview-sidebar-bottom, var(--sidebar-bottom)) 100%);
+  box-shadow: var(--shadow-raised);
   border-radius: 10px;
   padding: 16px 14px;
   display: flex;
@@ -1028,7 +1503,7 @@ img { max-width: 100%; }
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #C9A24B;
+  background-image: var(--gloss), var(--gold-grad);
   display: inline-block;
 }
 
@@ -1041,21 +1516,34 @@ img { max-width: 100%; }
 }
 
 .theme-preview-navitem-active {
-  background: var(--preview-pine, var(--pine));
-  color: #FBFAF6;
+  background-image: var(--gloss), var(--gold-grad);
+  color: var(--gold-ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-gold);
 }
 
 /* --- Responsive --- */
 
 @media (max-width: 980px) {
   .app-shell { flex-direction: column; }
-  .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 16px 20px; }
+  /* Horizontal bar at this width, so the elevation moves to the bottom edge
+     and the gradient runs left-to-right. */
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    padding: 16px 20px;
+    background-image: var(--gloss-soft), linear-gradient(90deg, var(--sidebar-top) 0%, var(--sidebar-bottom) 100%);
+    box-shadow: 0 1px 0 rgba(14, 42, 34, 0.20), 0 7px 26px -8px rgba(14, 42, 34, 0.32);
+  }
   .sidebar-footer { display: none; }
   .nav-links { flex-direction: row; }
   .main { padding: 24px 20px 40px; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .two-col, .detail-grid, .calendar-layout { grid-template-columns: 1fr; }
   .month-grid { grid-auto-rows: 84px; }
+  .quick-actions { grid-template-columns: repeat(3, 1fr); }
+  .today-strip { padding: 22px; }
 }
 
 @media (max-width: 480px) {
@@ -1064,4 +1552,7 @@ img { max-width: 100%; }
   .month-cell { padding: 6px 8px; }
   .month-count { font-size: 0.62rem; }
   .calendar-toolbar { width: 100%; justify-content: space-between; }
+  .quick-actions { grid-template-columns: repeat(2, 1fr); }
+  .today-strip { flex-direction: column; align-items: flex-start; }
+  .recent-card { flex-basis: 210px; width: 210px; }
 }
