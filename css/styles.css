@@ -29,6 +29,14 @@
   --terracotta-grad: linear-gradient(180deg, #C9704A 0%, var(--terracotta-chip) 52%, #954829 100%);
   --gray-grad: linear-gradient(180deg, #999385 0%, #6F6A5D 52%, #59554A 100%);
 
+  /* Slate + burgundy — for Sales Rep badges only, picked from the same
+     preset swatches already offered in Settings' color pickers so they read
+     as part of the existing palette rather than a new hue. */
+  --slate-chip: #3E5C76;
+  --slate-grad: linear-gradient(180deg, #6C879E 0%, var(--slate-chip) 52%, #2C4258 100%);
+  --burgundy-chip: #6D2436;
+  --burgundy-grad: linear-gradient(180deg, #9C4A5C 0%, var(--burgundy-chip) 52%, #4C1826 100%);
+
   /* Rust — a deeper, more alarming red than terracotta, reserved for the
      Dashboard's Priority stat card so it reads as "needs attention now"
      against the calm pine/gold of the rest of the row. */
@@ -679,6 +687,15 @@ a.schedule-item:hover { background: var(--paper); }
 .badge-medium { background-image: var(--gloss), var(--gold-grad); color: var(--gold-ink); }
 .badge-low { background-image: var(--gloss), var(--gray-grad); color: #FBFAF6; }
 
+/* Sales Rep badges — Ray/Kim reuse their tech-avatar colour (same person,
+   same identity colour whether shown as tech or rep); Mike/Dana get the
+   slate/burgundy pair; Unassigned is the app's usual "no one" grey. */
+.badge-rep-ray { background-image: var(--gloss), var(--pine-grad); color: var(--pine-ink); }
+.badge-rep-kim { background-image: var(--gloss), var(--gold-grad); color: var(--gold-ink); }
+.badge-rep-mike { background-image: var(--gloss), var(--slate-grad); color: #FBFAF6; }
+.badge-rep-dana { background-image: var(--gloss), var(--burgundy-grad); color: #FBFAF6; }
+.badge-rep-unassigned { background-image: var(--gloss), var(--gray-grad); color: #FBFAF6; }
+
 .badge-review { background-image: var(--gloss), var(--terracotta-grad); color: #FBFAF6; }
 
 /* --- Needs review flag --- */
@@ -752,6 +769,75 @@ a.schedule-item:hover { background: var(--paper); }
 
 .info-label { color: var(--ink-muted); }
 .info-value { font-weight: 500; text-align: right; }
+
+/* --- Contact card editor (profile view only) --- */
+
+.card-edit-btn { margin-top: 14px; width: 100%; justify-content: center; }
+
+.edit-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+}
+
+.edit-field .info-label { flex-shrink: 0; }
+.edit-field .text-input, .edit-field .select-input { flex: 1; min-width: 0; }
+
+/* Plain rectangular field, same field treatment (fill/border/focus ring) as
+   .topbar-search input and .select-input — the app's other text inputs. */
+.text-input {
+  width: 100%;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 11px;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 0.85rem;
+  color: var(--ink);
+  box-shadow: var(--shadow-chip);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.text-input::placeholder { color: #9A9584; }
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--pine);
+  box-shadow: 0 0 0 3px var(--pine-tint);
+}
+
+.custom-field-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.custom-field-row .custom-field-label { flex: 0 0 38%; }
+.custom-field-row .custom-field-value { flex: 1; min-width: 0; }
+
+.custom-field-remove {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: var(--paper);
+  box-shadow: var(--shadow-chip);
+  color: var(--ink-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-field-remove:hover { background: var(--terracotta-tint); color: var(--terracotta-chip); }
+
+#add-custom-field-btn { margin-top: 2px; width: 100%; justify-content: center; }
 
 /* --- Job activity tabs (Messages / Calls / Documents / Photos) --- */
 
@@ -829,19 +915,92 @@ a.schedule-item:hover { background: var(--paper); }
   text-align: center;
   padding: 7px 4px;
   border-radius: 7px;
+  font-family: 'Public Sans', sans-serif;
   font-size: 0.72rem;
   font-weight: 600;
   background: #EDEAE1;
   color: #A8A290;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
 
+.pipeline-step:hover { background: var(--line); color: var(--ink-muted); }
+
 .pipeline-step.done { background: var(--pine-tint); color: var(--pine); }
+.pipeline-step.done:hover { background: var(--pine-tint); filter: brightness(0.96); }
 
 .pipeline-step.current {
   background-image: var(--gloss), var(--pine-grad);
   color: var(--pine-ink);
   box-shadow: var(--shadow-pine);
 }
+.pipeline-step.current:hover {
+  background-image: var(--gloss), var(--pine-grad);
+  color: var(--pine-ink);
+}
+
+/* --- Picker (shared badge-click-opens-dropdown pattern: Urgency and Sales
+   Rep, on both the job detail page and Boards cards) --- */
+
+.picker { position: relative; display: inline-block; }
+
+.picker-trigger {
+  position: relative;
+  border: none;
+  cursor: pointer;
+  padding-right: 22px;
+}
+
+/* Small down-caret in the trigger's own text colour, so it reads correctly
+   on every badge's ink (white on some, pine/gold ink on others). */
+.picker-trigger::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  margin-top: -5px;
+  border-right: 1.75px solid currentColor;
+  border-bottom: 1.75px solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0.85;
+}
+
+/* Fixed, not absolute — positioned in JS from the trigger's own screen rect
+   so it's never clipped by a scrolling ancestor (a Boards column scrolls
+   its own card list independently of the page). */
+.picker-menu {
+  position: fixed;
+  background: var(--paper-raised);
+  border-radius: 10px;
+  box-shadow: var(--shadow-raised);
+  padding: 6px;
+  z-index: 40;
+  min-width: 130px;
+}
+
+.picker-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.picker-option:hover { background: var(--pine-tint); }
+.picker-option.active { color: var(--pine-dark); }
 
 .notes-block {
   background: var(--paper);
@@ -1449,6 +1608,15 @@ a.result-row:hover { background: var(--pine-tint); }
   flex-shrink: 0;
 }
 
+/* Assigned-tech identity badge (Boards cards) — same chip as .avatar, but
+   colored per technician like the calendar's tech-dot/appt-block, instead
+   of the fixed gold used for contact initials. Unassigned falls back to a
+   neutral grey rather than reading as a real assignee. */
+.avatar-tech.tech-ray { background-image: var(--gloss), var(--tech-ray-grad, var(--pine-grad)); color: var(--tech-ray-fg, var(--pine-ink)); }
+.avatar-tech.tech-kim { background-image: var(--gloss), var(--tech-kim-grad, var(--gold-grad)); color: var(--tech-kim-fg, var(--gold-ink)); }
+.avatar-tech.tech-nia { background-image: var(--gloss), var(--tech-nia-grad, var(--terracotta-grad)); color: var(--tech-nia-fg, #FBFAF6); }
+.avatar-tech.tech-unassigned { background-image: var(--gloss), var(--gray-grad); color: #FBFAF6; }
+
 /* --- Contact directory rows --- */
 
 .contact-row {
@@ -1493,7 +1661,7 @@ a.contact-row:hover { background: var(--paper); }
   flex-shrink: 0;
 }
 
-.contact-row .badge { flex-shrink: 0; }
+.contact-row .badge, .contact-row .picker { flex-shrink: 0; }
 
 mark.search-hit {
   background: var(--gold-light);
@@ -1749,6 +1917,160 @@ mark.search-hit {
   color: var(--gold-ink);
   font-weight: 600;
   box-shadow: var(--shadow-gold);
+}
+
+/* --- Boards page --- */
+
+.board-header { align-items: center; }
+
+.board-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.board-filter-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/* Pill-shaped native <select>, matching .topbar-search input's field
+   treatment with the chip-button chrome of .nav-today-btn — the app's other
+   dropdown/filter styling. Reusable anywhere else a plain select is needed. */
+.select-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--paper-raised);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236E695C' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  padding: 8px 34px 8px 16px;
+  font-family: 'Public Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--pine-dark);
+  box-shadow: var(--shadow-chip);
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.select-input:hover { background-color: var(--pine-tint); }
+
+.select-input:focus {
+  outline: none;
+  border-color: var(--pine);
+  box-shadow: 0 0 0 3px var(--pine-tint);
+}
+
+.board-scroll {
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.board-columns {
+  display: flex;
+  gap: 16px;
+  min-width: max-content;
+  align-items: flex-start;
+}
+
+.board-column {
+  flex: 0 0 280px;
+  width: 280px;
+  background: var(--paper-raised);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 260px);
+}
+
+.board-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  flex-shrink: 0;
+}
+
+.board-column-name {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+
+.board-column-count {
+  font-family: 'Public Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: var(--pine-dark);
+  background: var(--pine-tint);
+  padding: 2px 9px;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+
+.board-column-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 12px 12px;
+  min-height: 64px;
+  transition: background 0.12s;
+}
+
+.board-column-body.drag-over {
+  background: var(--pine-tint);
+  border-radius: 10px;
+}
+
+.board-column-body::-webkit-scrollbar { width: 6px; }
+.board-column-body::-webkit-scrollbar-track { background: transparent; }
+.board-column-body::-webkit-scrollbar-thumb { background: var(--line); border-radius: 100px; }
+
+.board-card {
+  background: var(--paper);
+  border-radius: 10px;
+  box-shadow: var(--shadow-chip);
+  padding: 12px 12px 10px;
+  margin-bottom: 10px;
+  cursor: grab;
+}
+
+.board-card:last-child { margin-bottom: 0; }
+.board-card.dragging { opacity: 0.4; }
+.board-card:active { cursor: grabbing; }
+.board-card:hover { box-shadow: var(--shadow-raised); }
+
+.board-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.board-card-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1.32;
+}
+
+.board-card-meta {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.board-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
 }
 
 /* --- Responsive --- */

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Contacts — Foreman</title>
+<title>Boards — Foreman</title>
 <link rel="stylesheet" href="css/styles.css">
 <script src="js/theme.js"></script>
 </head>
@@ -14,8 +14,8 @@
     <nav class="nav-links">
       <a class="nav-link" href="index.html">Dashboard</a>
       <a class="nav-link" href="calendar.html">Calendar</a>
-      <a class="nav-link" href="boards.html">Boards</a>
-      <a class="nav-link active" href="contacts.html">Contacts</a>
+      <a class="nav-link active" href="boards.html">Boards</a>
+      <a class="nav-link" href="contacts.html">Contacts</a>
       <a class="nav-link" href="settings.html">Settings</a>
     </nav>
     <div class="sidebar-footer">Foreman Home Services<br>Austin, TX</div>
@@ -31,21 +31,26 @@
       </div>
     </div>
 
-    <div class="page-header">
+    <div class="page-header board-header">
       <div>
-        <h1>Contacts</h1>
-        <div class="page-subtitle" id="contacts-subtitle">—</div>
+        <h1>Boards</h1>
+        <div class="page-subtitle">Sales — drag a card to move it through the pipeline.</div>
+      </div>
+
+      <div class="board-toolbar">
+        <label class="board-filter-label" for="board-rep-filter">Filter by rep</label>
+        <select class="select-input" id="board-rep-filter"></select>
       </div>
     </div>
 
-    <div class="card">
-      <div id="contacts-list"></div>
+    <div class="board-scroll">
+      <div class="board-columns" id="board-columns"></div>
     </div>
   </main>
 </div>
 
 <script src="js/data.js"></script>
 <script src="js/search.js"></script>
-<script src="js/contacts.js"></script>
+<script src="js/boards.js"></script>
 </body>
 </html>

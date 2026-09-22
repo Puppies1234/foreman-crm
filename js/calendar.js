@@ -151,7 +151,7 @@ function renderDayColumn(dateObj, { big = false } = {}) {
     const top = (hourDecimal(appt.start_time) - HOUR_START) * hourHeight;
     const height = (hourDecimal(appt.end_time) - hourDecimal(appt.start_time)) * hourHeight;
     return `
-      <a href="contact.html?job=${job.id}" class="appt-block ${big ? "big" : ""} tech-${techSlug(appt.assigned_tech)}" style="top:${top}px; height:${height}px;">
+      <a href="contact.html?job=${job.id}" class="appt-block ${big ? "big" : ""} tech-${techSlug(job.assigned_to)}" style="top:${top}px; height:${height}px;">
         <div class="appt-time">${fullTimeRange(appt.start_time, appt.end_time)}</div>
         <div class="appt-title">${job.service_type}</div>
         <div class="appt-customer">${contact.full_name}</div>
@@ -261,7 +261,7 @@ function renderUnscheduled() {
             <span class="row-dot" style="background-image: var(--gloss), var(--status-${statusSlug(job.status)}-grad, var(--pine-grad));"></span>
             ${job.service_type}
           </div>
-          <div class="unscheduled-meta">${contact.full_name} · ${job.category}</div>
+          <div class="unscheduled-meta">${contact.full_name} · ${job.job_type}</div>
           <span class="badge ${statusBadgeClass(job.status)}">${job.status}</span>
           ${chevronIcon()}
         </div>

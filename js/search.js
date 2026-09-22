@@ -87,7 +87,7 @@ function renderJobRow({ contact, job }, q) {
       <span class="result-icon-box">${JOB_RESULT_ICON}</span>
       <div class="result-row-body">
         <div class="result-row-title">${highlightMatch(`Job #${job.job_number} — ${job.service_type}`, q)}</div>
-        <div class="result-row-meta">${escapeHtml(job.status)} · ${escapeHtml(contact.address)}</div>
+        <div class="result-row-meta">${escapeHtml(job.status)} · ${escapeHtml(job.job_location)}</div>
       </div>
       ${chevronIcon()}
     </a>

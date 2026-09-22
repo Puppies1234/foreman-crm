@@ -2,35 +2,55 @@
 
 const TODAY = "2026-09-18";
 
+// sales_rep here is the contact's account owner — independent of, and not
+// to be confused with, a job's own sales_rep (see JOBS below). custom_fields
+// is always an array (empty until the owner adds one from the Contact
+// card's editor) so render code never has to guard for it being undefined.
 const CONTACTS = [
-  { id: "c1", full_name: "Marta Alvarez", phone: "(512) 555-0148", email: "marta.alvarez@gmail.com", address: "412 Willow Creek Rd, Austin, TX", preferred_contact: "SMS", source: "Google" },
-  { id: "c2", full_name: "Denny Okafor", phone: "(512) 555-0117", email: "d.okafor@outlook.com", address: "88 Ridgeline Dr, Austin, TX", preferred_contact: "Phone", source: "Referral" },
-  { id: "c3", full_name: "Priya Chandran", phone: "(737) 555-0192", email: "priya.chandran@yahoo.com", address: "215 Sunview Ln, Round Rock, TX", preferred_contact: "Email", source: "Website" },
-  { id: "c4", full_name: "Wes Trammell", phone: "(512) 555-0176", email: "wes.trammell@gmail.com", address: "3309 Oakhaven Blvd, Austin, TX", preferred_contact: "SMS", source: "Facebook" },
-  { id: "c5", full_name: "Loretta Fenn", phone: "(512) 555-0163", email: "lfenn@icloud.com", address: "77 Cedar Park Cir, Cedar Park, TX", preferred_contact: "Phone", source: "Referral" },
-  { id: "c6", full_name: "Sam Iturbide", phone: "(737) 555-0140", email: "sam.iturbide@gmail.com", address: "560 Barton Springs Rd, Austin, TX", preferred_contact: "Email", source: "Google" },
-  { id: "c7", full_name: "Yolanda Briggs", phone: "(512) 555-0185", email: "yolanda.briggs@gmail.com", address: "902 Mesa Verde Trl, Austin, TX", preferred_contact: "Phone", source: "Google" },
-  { id: "c8", full_name: "Sarah Mitchell", phone: "(512) 555-0129", email: "sarah.mitchell@gmail.com", address: "245 Travis Heights Blvd, Austin, TX", preferred_contact: "SMS", source: "Referral" },
+  { id: "c1", full_name: "Marta Alvarez", phone: "(512) 555-0148", email: "marta.alvarez@gmail.com", address: "412 Willow Creek Rd, Austin, TX", preferred_contact: "Text", source: "Google", sales_rep: "Mike Reyes", custom_fields: [] },
+  { id: "c2", full_name: "Denny Okafor", phone: "(512) 555-0117", email: "d.okafor@outlook.com", address: "88 Ridgeline Dr, Austin, TX", preferred_contact: "Call", source: "Referral", sales_rep: "Dana Ferris", custom_fields: [] },
+  { id: "c3", full_name: "Priya Chandran", phone: "(737) 555-0192", email: "priya.chandran@yahoo.com", address: "215 Sunview Ln, Round Rock, TX", preferred_contact: "Email", source: "Website", sales_rep: "Unassigned", custom_fields: [] },
+  { id: "c4", full_name: "Wes Trammell", phone: "(512) 555-0176", email: "wes.trammell@gmail.com", address: "3309 Oakhaven Blvd, Austin, TX", preferred_contact: "Text", source: "Facebook", sales_rep: "Mike Reyes", custom_fields: [] },
+  { id: "c5", full_name: "Loretta Fenn", phone: "(512) 555-0163", email: "lfenn@icloud.com", address: "77 Cedar Park Cir, Cedar Park, TX", preferred_contact: "Call", source: "Referral", sales_rep: "Dana Ferris", custom_fields: [] },
+  { id: "c6", full_name: "Sam Iturbide", phone: "(737) 555-0140", email: "sam.iturbide@gmail.com", address: "560 Barton Springs Rd, Austin, TX", preferred_contact: "Email", source: "Google", sales_rep: "Kim Osei", custom_fields: [] },
+  { id: "c7", full_name: "Yolanda Briggs", phone: "(512) 555-0185", email: "yolanda.briggs@gmail.com", address: "902 Mesa Verde Trl, Austin, TX", preferred_contact: "Call", source: "Google", sales_rep: "Mike Reyes", custom_fields: [] },
+  { id: "c8", full_name: "Sarah Mitchell", phone: "(512) 555-0129", email: "sarah.mitchell@gmail.com", address: "245 Travis Heights Blvd, Austin, TX", preferred_contact: "Text", source: "Referral", sales_rep: "Ray Dunmore", custom_fields: [] },
 ];
 
 // job_number is the customer-facing "Job #1042" id shown on the contact
 // profile's Jobs index; date is when the job was opened (used for sorting
 // and display there). Neither is used internally — id remains the join key.
+// sales_rep is the person who owns the deal (quoting/closing) — a distinct
+// role from assigned_to (the field technician doing the work); a job's rep
+// and tech can be the same person or different people.
 const JOBS = [
-  { id: "j1", contact_id: "c1", service_type: "Water heater replacement", category: "Plumbing", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", quote_amount: 1850, intake_notes: "No hot water since yesterday morning. Tank is original to the house, ~14 years old, visible rust at base.", job_number: 1041, date: "2026-09-17" },
-  { id: "j2", contact_id: "c2", service_type: "AC not cooling", category: "HVAC", urgency: "High", status: "Quoted", assigned_to: "Kim Osei", quote_amount: 640, intake_notes: "Upstairs unit blowing warm air, outdoor fan not spinning. Thermostat reads 82°F.", job_number: 1036, date: "2026-09-16" },
-  { id: "j3", contact_id: "c3", service_type: "Panel upgrade estimate", category: "Electrical", urgency: "Low", status: "New Lead", assigned_to: "Unassigned", quote_amount: null, intake_notes: "Wants to upgrade from 100A to 200A ahead of EV charger install. Flexible on timing.", job_number: 1035, date: "2026-09-16" },
-  { id: "j4", contact_id: "c4", service_type: "Clogged main line", category: "Plumbing", urgency: "Medium", status: "Qualified", assigned_to: "Ray Dunmore", quote_amount: null, intake_notes: "Slow drainage at all fixtures, backing up in basement floor drain during heavy use.", job_number: 1033, date: "2026-09-15" },
-  { id: "j5", contact_id: "c5", service_type: "Seasonal HVAC tune-up", category: "HVAC", urgency: "Low", status: "Scheduled", assigned_to: "Kim Osei", quote_amount: 189, intake_notes: "Annual maintenance, repeat customer. No known issues.", job_number: 1028, date: "2026-09-10" },
-  { id: "j6", contact_id: "c6", service_type: "Outlet not working", category: "Electrical", urgency: "Medium", status: "Completed", assigned_to: "Nia Brackett", quote_amount: 220, intake_notes: "Kitchen GFCI tripped and won't reset. Two downstream outlets also dead.", job_number: 1040, date: "2026-09-17" },
-  { id: "j7", contact_id: "c1", service_type: "Leaky faucet, guest bath", category: "Plumbing", urgency: "Low", status: "New Lead", assigned_to: "Unassigned", quote_amount: null, intake_notes: "Steady drip at cold handle, worsening over the last week.", job_number: 1044, date: "2026-09-17" },
-  { id: "j8", contact_id: "c4", service_type: "Circuit breaker tripping", category: "Electrical", urgency: "Medium", status: "Qualified", assigned_to: "Nia Brackett", quote_amount: null, intake_notes: "Breaker for garage trips within minutes of using table saw. Suspect undersized circuit.", job_number: 1032, date: "2026-09-14" },
-  { id: "j9", contact_id: "c7", service_type: "Emergency pipe burst", category: "Plumbing", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", quote_amount: null, intake_notes: "Burst supply line under kitchen sink, water shut off at the main. Needs same-weekend repair.", job_number: 1039, date: "2026-09-17" },
+  { id: "j1", contact_id: "c1", service_type: "Water heater replacement", job_type: "New Install", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", sales_rep: "Dana Ferris", quote_amount: 1850, intake_notes: "No hot water since yesterday morning. Tank is original to the house, ~14 years old, visible rust at base.", job_number: 1041, date: "2026-09-17" },
+  { id: "j2", contact_id: "c2", service_type: "AC not cooling", job_type: "Repair", urgency: "High", status: "Quoted", assigned_to: "Kim Osei", sales_rep: "Ray Dunmore", quote_amount: 640, intake_notes: "Upstairs unit blowing warm air, outdoor fan not spinning. Thermostat reads 82°F.", job_number: 1036, date: "2026-09-16" },
+  { id: "j3", contact_id: "c3", service_type: "Panel upgrade estimate", job_type: "New Install", urgency: "Low", status: "New Lead", assigned_to: "Unassigned", sales_rep: "Mike Reyes", quote_amount: null, intake_notes: "Wants to upgrade from 100A to 200A ahead of EV charger install. Flexible on timing.", job_number: 1035, date: "2026-09-16" },
+  { id: "j4", contact_id: "c4", service_type: "Clogged main line", job_type: "Repair", urgency: "Medium", status: "Qualified", assigned_to: "Ray Dunmore", sales_rep: "Kim Osei", quote_amount: null, intake_notes: "Slow drainage at all fixtures, backing up in basement floor drain during heavy use.", job_number: 1033, date: "2026-09-15" },
+  { id: "j5", contact_id: "c5", service_type: "Seasonal HVAC tune-up", job_type: "Warranty", urgency: "Low", status: "Scheduled", assigned_to: "Kim Osei", sales_rep: "Ray Dunmore", quote_amount: 189, intake_notes: "Annual maintenance, repeat customer. No known issues.", job_number: 1028, date: "2026-09-10" },
+  { id: "j6", contact_id: "c6", service_type: "Outlet not working", job_type: "Repair", urgency: "Medium", status: "Completed", assigned_to: "Nia Brackett", sales_rep: "Mike Reyes", quote_amount: 220, intake_notes: "Kitchen GFCI tripped and won't reset. Two downstream outlets also dead.", job_number: 1040, date: "2026-09-17" },
+  { id: "j7", contact_id: "c1", service_type: "Leaky faucet, guest bath", job_type: "Repair", urgency: "Low", status: "New Lead", assigned_to: "Unassigned", sales_rep: "Kim Osei", quote_amount: null, intake_notes: "Steady drip at cold handle, worsening over the last week.", job_number: 1044, date: "2026-09-17" },
+  { id: "j8", contact_id: "c4", service_type: "Circuit breaker tripping", job_type: "Warranty", urgency: "Medium", status: "Qualified", assigned_to: "Nia Brackett", sales_rep: "Dana Ferris", quote_amount: null, intake_notes: "Breaker for garage trips within minutes of using table saw. Suspect undersized circuit.", job_number: 1032, date: "2026-09-14" },
+  { id: "j9", contact_id: "c7", service_type: "Emergency pipe burst", job_type: "Repair", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", sales_rep: "Dana Ferris", quote_amount: null, intake_notes: "Burst supply line under kitchen sink, water shut off at the main. Needs same-weekend repair.", job_number: 1039, date: "2026-09-17" },
   // Sarah Mitchell has two separate jobs, months apart — the case that proves
   // job-scoped data (messages/calls/documents/photos) never bleeds between them.
-  { id: "j10", contact_id: "c8", service_type: "Water heater replacement", category: "Plumbing", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", quote_amount: 1780, intake_notes: "No hot water since this morning, slight moisture at the tank valve. Unit is original to the house.", job_number: 1042, date: "2026-09-16" },
-  { id: "j11", contact_id: "c8", service_type: "Kitchen faucet install", category: "Plumbing", urgency: "Low", status: "Completed", assigned_to: "Ray Dunmore", quote_amount: 310, intake_notes: "Customer purchased a new pull-down faucet; needs the old one removed and the new one installed and tested.", job_number: 1038, date: "2026-08-10" },
+  { id: "j10", contact_id: "c8", service_type: "Water heater replacement", job_type: "New Install", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", sales_rep: "Dana Ferris", quote_amount: 1780, intake_notes: "No hot water since this morning, slight moisture at the tank valve. Unit is original to the house.", job_number: 1042, date: "2026-09-16" },
+  { id: "j11", contact_id: "c8", service_type: "Kitchen faucet install", job_type: "New Install", urgency: "Low", status: "Completed", assigned_to: "Ray Dunmore", sales_rep: "Kim Osei", quote_amount: 310, intake_notes: "Customer purchased a new pull-down faucet; needs the old one removed and the new one installed and tested.", job_number: 1038, date: "2026-08-10" },
 ];
+
+// job_location is the address work actually happens at — its own field on
+// the Job, independent of the contact's own address (same principle as
+// Sales Rep: a one-time copy at creation, never a live link either way).
+// These jobs were authored before the field existed, so each one is seeded
+// here from its contact's address at this moment — the same rule any real
+// job-creation flow must follow (see defaultJobLocationForNewJob below).
+JOBS.forEach(job => {
+  if (job.job_location === undefined) {
+    const contact = CONTACTS.find(c => c.id === job.contact_id);
+    job.job_location = contact ? contact.address : "";
+  }
+});
 
 const APPOINTMENTS = [
   { id: "a1", job_id: "j1", start_time: "2026-09-18T09:00", end_time: "2026-09-18T11:00", assigned_tech: "Ray Dunmore", status: "Confirmed" },
@@ -167,6 +187,426 @@ const ACTIVITY_LOG = [
 
 const STATUS_PIPELINE = ["New Lead", "Qualified", "Scheduled", "Quoted", "Completed"];
 
+/* ------------------------------ Job status ---------------------------------
+   Status can change from two places — dragging a card on the Boards page, or
+   clicking a pipeline step on the job detail page — so it lives in ONE
+   shared store, keyed by job id, following the same localStorage-with-
+   in-memory-fallback pattern as the job-number counter above. JOBS is
+   patched from that store as soon as it's read below, so every existing
+   getJob()/JOBS read across the app already sees the latest status with no
+   other code needing to know the store exists. setJobStatus() is the ONLY
+   sanctioned way to change a job's status afterward. */
+const JOB_STATUS_STORAGE_KEY = "foreman-job-status";
+let inMemoryStatusOverrides = null; // fallback if localStorage throws/unavailable
+
+function readStatusOverrides() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_STATUS_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return inMemoryStatusOverrides || {};
+}
+
+function writeStatusOverrides(overrides) {
+  inMemoryStatusOverrides = overrides;
+  try {
+    localStorage.setItem(JOB_STATUS_STORAGE_KEY, JSON.stringify(overrides));
+  } catch (e) {}
+}
+
+(function applyStatusOverrides() {
+  const overrides = readStatusOverrides();
+  JOBS.forEach(job => {
+    if (overrides[job.id] && STATUS_PIPELINE.includes(overrides[job.id])) {
+      job.status = overrides[job.id];
+    }
+  });
+})();
+
+function setJobStatus(jobId, status) {
+  const job = getJob(jobId);
+  if (!job || job.status === status) return;
+  job.status = status;
+  const overrides = readStatusOverrides();
+  overrides[jobId] = status;
+  writeStatusOverrides(overrides);
+}
+
+/* ------------------------------ Job urgency ---------------------------------
+   Same shape as the status store above, for the same reason: urgency shows
+   up wherever a job does — the job detail page and Boards cards today,
+   anywhere else it gets added later — and a change from any one of them
+   must show up in all the others. setJobUrgency() is the ONLY sanctioned
+   way to change it. */
+const URGENCY_LEVELS = ["Low", "Medium", "High"];
+const JOB_URGENCY_STORAGE_KEY = "foreman-job-urgency";
+let inMemoryUrgencyOverrides = null; // fallback if localStorage throws/unavailable
+
+function readUrgencyOverrides() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_URGENCY_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return inMemoryUrgencyOverrides || {};
+}
+
+function writeUrgencyOverrides(overrides) {
+  inMemoryUrgencyOverrides = overrides;
+  try {
+    localStorage.setItem(JOB_URGENCY_STORAGE_KEY, JSON.stringify(overrides));
+  } catch (e) {}
+}
+
+(function applyUrgencyOverrides() {
+  const overrides = readUrgencyOverrides();
+  JOBS.forEach(job => {
+    if (overrides[job.id] && URGENCY_LEVELS.includes(overrides[job.id])) {
+      job.urgency = overrides[job.id];
+    }
+  });
+})();
+
+function setJobUrgency(jobId, urgency) {
+  const job = getJob(jobId);
+  if (!job || job.urgency === urgency) return;
+  job.urgency = urgency;
+  const overrides = readUrgencyOverrides();
+  overrides[jobId] = urgency;
+  writeUrgencyOverrides(overrides);
+}
+
+/* ------------------------------ Sales reps ----------------------------------
+   The roster options for every Sales Rep dropdown in the app: the per-job
+   field below, the per-contact field further down, and the Boards page's
+   rep filter. One shared list so those three can never drift apart. */
+const SALES_REPS = ["Dana Ferris", "Kim Osei", "Mike Reyes", "Ray Dunmore", "Unassigned"];
+
+/* ------------------------- Job sales rep (per job) --------------------------
+   Who's currently working this job's deal — distinct from assigned_to (the
+   field technician) and from the *contact's* sales_rep further down (whose
+   account this is). Same shape as the status/urgency stores: JOBS is
+   patched from this store as soon as it's read below, and setJobSalesRep()
+   is the ONLY sanctioned way to change it afterward. */
+const JOB_SALES_REP_STORAGE_KEY = "foreman-job-sales-rep";
+let inMemoryJobSalesRepOverrides = null; // fallback if localStorage throws/unavailable
+
+function readJobSalesRepOverrides() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_SALES_REP_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return inMemoryJobSalesRepOverrides || {};
+}
+
+function writeJobSalesRepOverrides(overrides) {
+  inMemoryJobSalesRepOverrides = overrides;
+  try {
+    localStorage.setItem(JOB_SALES_REP_STORAGE_KEY, JSON.stringify(overrides));
+  } catch (e) {}
+}
+
+(function applyJobSalesRepOverrides() {
+  const overrides = readJobSalesRepOverrides();
+  JOBS.forEach(job => {
+    if (overrides[job.id]) job.sales_rep = overrides[job.id];
+  });
+})();
+
+function setJobSalesRep(jobId, rep) {
+  const job = getJob(jobId);
+  if (!job || job.sales_rep === rep) return;
+  job.sales_rep = rep;
+  const overrides = readJobSalesRepOverrides();
+  overrides[jobId] = rep;
+  writeJobSalesRepOverrides(overrides);
+}
+
+/* ------------------------ Job assigned-to (per job) --------------------------
+   The field technician doing the work — distinct from sales_rep above (who
+   sold it), same principle as the contact-rep/job-rep split further down:
+   two independent fields that happen to share a UI pattern (a click-to-open
+   picker off the same SALES_REPS roster), never one field in two places.
+   Own key, own setter; setJobAssignedTo() never touches the sales-rep
+   store, and vice versa. */
+const JOB_ASSIGNED_TO_STORAGE_KEY = "foreman-job-assigned-to";
+let inMemoryJobAssignedToOverrides = null; // fallback if localStorage throws/unavailable
+
+function readJobAssignedToOverrides() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_ASSIGNED_TO_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return inMemoryJobAssignedToOverrides || {};
+}
+
+function writeJobAssignedToOverrides(overrides) {
+  inMemoryJobAssignedToOverrides = overrides;
+  try {
+    localStorage.setItem(JOB_ASSIGNED_TO_STORAGE_KEY, JSON.stringify(overrides));
+  } catch (e) {}
+}
+
+(function applyJobAssignedToOverrides() {
+  const overrides = readJobAssignedToOverrides();
+  JOBS.forEach(job => {
+    if (overrides[job.id]) job.assigned_to = overrides[job.id];
+  });
+})();
+
+function setJobAssignedTo(jobId, tech) {
+  const job = getJob(jobId);
+  if (!job || job.assigned_to === tech) return;
+  job.assigned_to = tech;
+  const overrides = readJobAssignedToOverrides();
+  overrides[jobId] = tech;
+  writeJobAssignedToOverrides(overrides);
+}
+
+/* ----------------------- Contact sales rep (per contact) ---------------------
+   Who owns this contact's account — a completely separate field from any
+   job's own sales_rep above, stored under its own key and keyed by CONTACT
+   id, not job id. Changing one never touches the other: setContactSalesRep()
+   only ever writes to this store, and setJobSalesRep() above only ever
+   writes to the job store — there is no code path that lets a contact-rep
+   change ripple into any of that contact's jobs, past or future. */
+const CONTACT_SALES_REP_STORAGE_KEY = "foreman-contact-sales-rep";
+let inMemoryContactSalesRepOverrides = null; // fallback if localStorage throws/unavailable
+
+function readContactSalesRepOverrides() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CONTACT_SALES_REP_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return inMemoryContactSalesRepOverrides || {};
+}
+
+function writeContactSalesRepOverrides(overrides) {
+  inMemoryContactSalesRepOverrides = overrides;
+  try {
+    localStorage.setItem(CONTACT_SALES_REP_STORAGE_KEY, JSON.stringify(overrides));
+  } catch (e) {}
+}
+
+(function applyContactSalesRepOverrides() {
+  const overrides = readContactSalesRepOverrides();
+  CONTACTS.forEach(contact => {
+    if (overrides[contact.id]) contact.sales_rep = overrides[contact.id];
+  });
+})();
+
+function setContactSalesRep(contactId, rep) {
+  const contact = getContact(contactId);
+  if (!contact || contact.sales_rep === rep) return;
+  contact.sales_rep = rep;
+  const overrides = readContactSalesRepOverrides();
+  overrides[contactId] = rep;
+  writeContactSalesRepOverrides(overrides);
+}
+
+// The rule a new job must follow at creation time: its sales_rep starts as
+// a one-time COPY of its contact's *current* sales_rep, not a live link —
+// after this, editing the contact's rep never touches the job, and editing
+// the job's rep never touches the contact. There's no job-creation form
+// wired up in this preview yet — jobs are created from within an existing
+// contact, not standalone — but whenever one exists, it must seed
+// sales_rep this way rather than leaving it blank or copying assigned_to.
+function defaultSalesRepForNewJob(contact) {
+  return contact.sales_rep;
+}
+
+/* --------------------------- Contact details (editable) ---------------------
+   The manually-editable part of a contact's own info — phone, email,
+   address, preferred_contact, source, plus any custom label/value fields
+   the owner adds — all saved together as one bundle per contact id, all
+   through the Contact card's single Edit/Save/Cancel flow. Its own key,
+   fully separate from status/urgency/sales-rep above: setContactDetails()
+   never touches those stores, and none of them ever touch this one. */
+const CONTACT_DETAILS_STORAGE_KEY = "foreman-contact-details";
+let inMemoryContactDetailsOverrides = null; // fallback if localStorage throws/unavailable
+
+function readContactDetailsOverrides() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CONTACT_DETAILS_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return inMemoryContactDetailsOverrides || {};
+}
+
+function writeContactDetailsOverrides(overrides) {
+  inMemoryContactDetailsOverrides = overrides;
+  try {
+    localStorage.setItem(CONTACT_DETAILS_STORAGE_KEY, JSON.stringify(overrides));
+  } catch (e) {}
+}
+
+(function applyContactDetailsOverrides() {
+  const overrides = readContactDetailsOverrides();
+  CONTACTS.forEach(contact => {
+    const saved = overrides[contact.id];
+    if (!saved) return;
+    contact.phone = saved.phone;
+    contact.email = saved.email;
+    contact.address = saved.address;
+    contact.preferred_contact = saved.preferred_contact;
+    // Guarded (unlike the fields above): a bundle saved before this build
+    // added Source to the Edit form won't have it, and undefined would
+    // otherwise blank out a perfectly good existing contact.source.
+    if (saved.source !== undefined) contact.source = saved.source;
+    contact.custom_fields = Array.isArray(saved.custom_fields) ? saved.custom_fields : [];
+  });
+})();
+
+// The ONLY sanctioned way to change a contact's editable details — commits
+// the whole bundle (Save is one atomic action, not five separate ones).
+function setContactDetails(contactId, details) {
+  const contact = getContact(contactId);
+  if (!contact) return;
+  contact.phone = details.phone;
+  contact.email = details.email;
+  contact.address = details.address;
+  contact.preferred_contact = details.preferred_contact;
+  contact.source = details.source;
+  contact.custom_fields = details.custom_fields;
+
+  const overrides = readContactDetailsOverrides();
+  overrides[contactId] = {
+    phone: details.phone,
+    email: details.email,
+    address: details.address,
+    preferred_contact: details.preferred_contact,
+    source: details.source,
+    custom_fields: details.custom_fields,
+  };
+  writeContactDetailsOverrides(overrides);
+}
+
+/* ---------------------------- Job details (editable) -------------------------
+   job_type, quote_amount, intake_notes, and job_location — plain fields
+   directly on the Job object, edited together via the Job card's own
+   Edit/Save/Cancel flow. Mirrors the Contact card's foreman-contact-details
+   store above, one key per record, but this one's keyed by job id and
+   fully separate from it (and from status/urgency/sales-rep). The card's
+   Edit form also edits the job's appointment time, but that's a different
+   entity — see setAppointmentTime() below, its own store. */
+const JOB_TYPES = ["Repair", "New Install", "Warranty"];
+const JOB_DETAILS_STORAGE_KEY = "foreman-job-details";
+let inMemoryJobDetailsOverrides = null; // fallback if localStorage throws/unavailable
+
+function readJobDetailsOverrides() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_DETAILS_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return inMemoryJobDetailsOverrides || {};
+}
+
+function writeJobDetailsOverrides(overrides) {
+  inMemoryJobDetailsOverrides = overrides;
+  try {
+    localStorage.setItem(JOB_DETAILS_STORAGE_KEY, JSON.stringify(overrides));
+  } catch (e) {}
+}
+
+(function applyJobDetailsOverrides() {
+  const overrides = readJobDetailsOverrides();
+  JOBS.forEach(job => {
+    const saved = overrides[job.id];
+    if (!saved) return;
+    if (saved.job_type !== undefined) job.job_type = saved.job_type;
+    if (saved.quote_amount !== undefined) job.quote_amount = saved.quote_amount;
+    if (saved.intake_notes !== undefined) job.intake_notes = saved.intake_notes;
+    if (saved.job_location !== undefined) job.job_location = saved.job_location;
+  });
+})();
+
+function setJobDetails(jobId, details) {
+  const job = getJob(jobId);
+  if (!job) return;
+  job.job_type = details.job_type;
+  job.quote_amount = details.quote_amount;
+  job.intake_notes = details.intake_notes;
+  job.job_location = details.job_location;
+
+  const overrides = readJobDetailsOverrides();
+  overrides[jobId] = {
+    job_type: details.job_type,
+    quote_amount: details.quote_amount,
+    intake_notes: details.intake_notes,
+    job_location: details.job_location,
+  };
+  writeJobDetailsOverrides(overrides);
+}
+
+// The rule a new job must follow at creation time: its job_location starts
+// as a one-time COPY of its contact's *current* address, not a live link —
+// after this, editing the job's location never touches the contact's
+// address, and editing the contact's address never touches the job's
+// location. Same principle as defaultSalesRepForNewJob() above; same
+// caveat too — no job-creation form is wired up in this preview yet, but
+// whenever one exists, it must seed job_location this way.
+function defaultJobLocationForNewJob(contact) {
+  return contact.address;
+}
+
+/* -------------------------- Appointment time (editable) ----------------------
+   An appointment is its own entity (APPOINTMENTS), not a field on Job, but
+   the Job card's Edit form edits its date/start/end time alongside
+   job_type/quote_amount/intake_notes. This app assumes at most one
+   appointment per job — same assumption getAppointmentForJob() already
+   makes with .find() — so this store is keyed by job id, not appointment
+   id. Saving for a job with no existing appointment creates one
+   (assigned_tech defaults to the job's own assigned_to, status defaults to
+   "Pending confirmation"); those two fields aren't otherwise touched by
+   this form. */
+const APPOINTMENT_TIME_STORAGE_KEY = "foreman-appointment-time";
+let inMemoryAppointmentTimeOverrides = null; // fallback if localStorage throws/unavailable
+
+function readAppointmentTimeOverrides() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(APPOINTMENT_TIME_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return inMemoryAppointmentTimeOverrides || {};
+}
+
+function writeAppointmentTimeOverrides(overrides) {
+  inMemoryAppointmentTimeOverrides = overrides;
+  try {
+    localStorage.setItem(APPOINTMENT_TIME_STORAGE_KEY, JSON.stringify(overrides));
+  } catch (e) {}
+}
+
+function findOrCreateAppointment(jobId) {
+  let appt = getAppointmentForJob(jobId);
+  if (appt) return appt;
+  const job = getJob(jobId);
+  if (!job) return null;
+  appt = { id: "appt-" + jobId, job_id: jobId, assigned_tech: job.assigned_to, status: "Pending confirmation" };
+  APPOINTMENTS.push(appt);
+  return appt;
+}
+
+(function applyAppointmentTimeOverrides() {
+  const overrides = readAppointmentTimeOverrides();
+  Object.keys(overrides).forEach(jobId => {
+    const appt = findOrCreateAppointment(jobId);
+    if (!appt) return;
+    appt.start_time = overrides[jobId].start_time;
+    appt.end_time = overrides[jobId].end_time;
+  });
+})();
+
+function setAppointmentTime(jobId, startTimeIso, endTimeIso) {
+  const appt = findOrCreateAppointment(jobId);
+  if (!appt) return;
+  appt.start_time = startTimeIso;
+  appt.end_time = endTimeIso;
+
+  const overrides = readAppointmentTimeOverrides();
+  overrides[jobId] = { start_time: startTimeIso, end_time: endTimeIso };
+  writeAppointmentTimeOverrides(overrides);
+}
+
 /* ----------------------------- Job numbering ------------------------------
    Job numbers (the "Job #1042" shown throughout the app) must be globally
    unique and never reused — including after a job is deleted or archived.
@@ -267,6 +707,124 @@ function statusBadgeClass(status) {
 function urgencyBadgeClass(urgency) {
   const map = { High: "badge-urgent", Medium: "badge-medium", Low: "badge-low" };
   return map[urgency] || "badge-low";
+}
+
+// Ray/Kim's chips reuse their existing tech-avatar colour, for identity
+// consistency when the same person is both the field tech and the rep on a
+// job; Mike/Dana (sales-only people, no tech avatar) get two more colours
+// from the same swatch set already offered in Settings' color pickers.
+// Unassigned falls back to the neutral grey used for "no one" everywhere
+// else (New Lead's status badge, Low urgency).
+function salesRepBadgeClass(rep) {
+  const map = {
+    ray: "badge-rep-ray",
+    kim: "badge-rep-kim",
+    mike: "badge-rep-mike",
+    dana: "badge-rep-dana",
+  };
+  return map[techSlug(rep)] || "badge-rep-unassigned";
+}
+
+/* -------------------------------- Picker ------------------------------------
+   Turns any rendered badge into a click-to-open dropdown — shared by the job
+   detail page's Urgency, per-job Sales Rep and per-contact Sales Rep rows,
+   by both badges on Boards cards, and by the Sales Rep badge on Contacts
+   rows. pickerHtml() renders one instance (a value trigger + a menu that
+   starts hidden, tagged with which field it edits and which record — job or
+   contact — it belongs to); wirePickers() must be called on the containing
+   element right after that HTML is inserted, same as every other
+   post-innerHTML wiring step in this app (the pipeline steps,
+   drag-and-drop) — one call wires every picker of every field inside that
+   container. */
+const PICKER_FIELDS = {
+  urgency: { setValue: (id, v) => setJobUrgency(id, v), badgeClass: urgencyBadgeClass },
+  sales_rep: { setValue: (id, v) => setJobSalesRep(id, v), badgeClass: salesRepBadgeClass },
+  contact_sales_rep: { setValue: (id, v) => setContactSalesRep(id, v), badgeClass: salesRepBadgeClass },
+  // Same roster/badge colors as Sales Rep (same people, same identity
+  // colors) — a different field on the job entirely, own store above.
+  assigned_to: { setValue: (id, v) => setJobAssignedTo(id, v), badgeClass: salesRepBadgeClass },
+};
+
+function pickerHtml(field, entityId, options, currentValue) {
+  const badgeClass = PICKER_FIELDS[field].badgeClass;
+  const rows = options.map(opt => `
+    <button type="button" class="picker-option ${opt === currentValue ? "active" : ""}" data-value="${opt}">
+      <span class="row-dot ${badgeClass(opt)}"></span>${opt}
+    </button>
+  `).join("");
+  return `
+    <span class="picker" data-entity-id="${entityId}" data-field="${field}">
+      <button type="button" class="badge ${badgeClass(currentValue)} picker-trigger">${currentValue}</button>
+      <div class="picker-menu" hidden>${rows}</div>
+    </span>
+  `;
+}
+
+function urgencyPickerHtml(job) {
+  return pickerHtml("urgency", job.id, URGENCY_LEVELS, job.urgency);
+}
+
+function salesRepPickerHtml(job) {
+  return pickerHtml("sales_rep", job.id, SALES_REPS, job.sales_rep);
+}
+
+function assignedToPickerHtml(job) {
+  return pickerHtml("assigned_to", job.id, SALES_REPS, job.assigned_to);
+}
+
+function contactSalesRepPickerHtml(contact) {
+  return pickerHtml("contact_sales_rep", contact.id, SALES_REPS, contact.sales_rep);
+}
+
+// Closing on an outside click/scroll is one listener shared by every picker
+// on the page, rather than one per picker — cheap even on pages with none.
+// Scroll is captured (not bubbled) so it also fires for scrolling inside a
+// Boards column, which doesn't bubble to document on its own.
+function closeAllPickerMenus() {
+  document.querySelectorAll(".picker-menu:not([hidden])").forEach(menu => { menu.hidden = true; });
+}
+document.addEventListener("click", closeAllPickerMenus);
+document.addEventListener("scroll", closeAllPickerMenus, true);
+
+// `onChange` runs after a pick is made — the caller's own re-render, so the
+// new value shows up immediately everywhere on that page.
+//
+// The menu is positioned in the fixed viewport (not flowed under the badge)
+// so it isn't clipped by a scrolling ancestor — Boards columns scroll their
+// own card list independently, and a card near the bottom of one would
+// otherwise cut the dropdown off.
+function wirePickers(root, onChange) {
+  root.querySelectorAll(".picker").forEach(picker => {
+    const entityId = picker.getAttribute("data-entity-id");
+    const setValue = PICKER_FIELDS[picker.getAttribute("data-field")].setValue;
+    const trigger = picker.querySelector(".picker-trigger");
+    const menu = picker.querySelector(".picker-menu");
+
+    trigger.addEventListener("click", e => {
+      // preventDefault, not just stopPropagation: a picker can sit inside a
+      // native <a> (Contacts rows) whose "navigate" default action isn't
+      // stopped by stopPropagation alone.
+      e.preventDefault();
+      e.stopPropagation();
+      const wasOpen = !menu.hidden;
+      closeAllPickerMenus();
+      if (!wasOpen) {
+        const rect = trigger.getBoundingClientRect();
+        menu.style.top = `${rect.bottom + 6}px`;
+        menu.style.left = `${rect.left}px`;
+      }
+      menu.hidden = wasOpen;
+    });
+
+    menu.querySelectorAll(".picker-option").forEach(option => {
+      option.addEventListener("click", e => {
+        e.preventDefault();
+        e.stopPropagation();
+        setValue(entityId, option.getAttribute("data-value"));
+        onChange();
+      });
+    });
+  });
 }
 
 // Slug used for both the --tech-{slug}-* and tech-{slug} CSS hooks that

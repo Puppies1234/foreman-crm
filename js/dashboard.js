@@ -30,15 +30,6 @@ function placeholderAction(label) {
   return `alert('${label} isn\\u2019t wired up yet in this preview \\u2014 it will connect once Foreman\\u2019s live tools are in place.')`;
 }
 
-// There's no job-creation form yet, but the numbering rule (globally unique,
-// never reused, even after a delete) is real and lives in js/data.js —
-// reserveJobNumber() is called here so the counter genuinely advances every
-// time this button is used, the same as it would from a real creation flow.
-function createNewJobAction() {
-  const number = reserveJobNumber();
-  alert(`New Job #${number} — job creation isn’t wired up yet in this preview, but this number is now reserved and will never be handed out again.`);
-}
-
 function renderTodayStrip() {
   const todaysAppts = APPOINTMENTS.filter(a => a.start_time.startsWith(TODAY));
   const confirmed = todaysAppts.filter(a => a.status === "Confirmed").length;
@@ -59,7 +50,11 @@ function renderTodayStrip() {
 
 function renderQuickActions() {
   const actions = [
-    { label: "New Job", iconName: "plus", primary: true, onclick: "createNewJobAction()" },
+    // Jobs are created from within an existing contact, not standalone from
+    // the Dashboard — this is the contact-creation entry point instead, same
+    // honest-placeholder pattern as Estimates/Photos/Follow-Ups below since
+    // there's no contact-creation form wired up yet either.
+    { label: "New Contact", iconName: "plus", primary: true, onclick: placeholderAction("Adding a new contact") },
     { label: "Contacts", iconName: "contacts", href: "contact.html?contact=c1" },
     { label: "Calendar", iconName: "calendar", href: "calendar.html" },
     { label: "Estimates", iconName: "estimate", onclick: placeholderAction("Estimates") },
@@ -140,8 +135,8 @@ function renderRecentlyViewed() {
         <div class="recent-card-band" style="background-image: var(--gloss-soft), var(--status-${statusSlug(job.status)}-grad, var(--pine-grad));"></div>
         <div class="recent-card-body">
           <div class="recent-card-name">${contact.full_name}</div>
-          <div class="recent-card-meta">${job.category} · ${job.status}</div>
-          <div class="recent-card-address">${contact.address}</div>
+          <div class="recent-card-meta">${job.job_type} · ${job.status}</div>
+          <div class="recent-card-address">${job.job_location}</div>
         </div>
         ${chevronIcon()}
       </a>
@@ -166,11 +161,11 @@ function renderSchedule() {
     const contact = getContact(job.contact_id);
     return `
       <a class="schedule-item" href="contact.html?job=${job.id}">
-        <span class="row-dot" style="background-image: var(--gloss), var(--tech-${techSlug(appt.assigned_tech)}-grad, var(--pine-grad));"></span>
+        <span class="row-dot" style="background-image: var(--gloss), var(--tech-${techSlug(job.assigned_to)}-grad, var(--pine-grad));"></span>
         <div class="schedule-time">${formatTime(appt.start_time)}</div>
         <div class="schedule-details">
           <div class="schedule-title">${job.service_type}</div>
-          <div class="schedule-meta">${contact.full_name} · ${appt.assigned_tech} · ${appt.status}</div>
+          <div class="schedule-meta">${contact.full_name} · ${job.assigned_to} · ${appt.status}</div>
         </div>
         <span class="badge ${statusBadgeClass(job.status)}">${job.status}</span>
         ${chevronIcon()}
