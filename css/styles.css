@@ -1273,6 +1273,235 @@ a.schedule-item:hover { background: var(--paper); }
   padding: 8px 0;
 }
 
+/* --- Topbar (shared global search — identical markup on every page) --- */
+
+.topbar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.topbar-search {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+}
+
+.topbar-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  display: block;
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+
+.topbar-search input {
+  width: 100%;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  padding: 8px 30px 8px 38px;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 0.85rem;
+  color: var(--ink);
+  box-shadow: var(--shadow-chip);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.topbar-search input::placeholder { color: #9A9584; }
+
+.topbar-search input:focus {
+  outline: none;
+  border-color: var(--pine);
+  box-shadow: 0 0 0 3px var(--pine-tint);
+}
+
+.topbar-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  padding: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.topbar-search-clear svg { width: 12px; height: 12px; display: block; }
+
+.topbar-search-clear:hover { background: var(--line); color: var(--ink); }
+
+.topbar-search-clear.visible { display: inline-flex; }
+
+.topbar-search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--paper-raised);
+  border-radius: 12px;
+  box-shadow: var(--shadow-raised);
+  padding: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+  z-index: 20;
+  text-align: left;
+}
+
+.result-section + .result-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.result-section-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  padding: 4px 8px 6px;
+}
+
+.result-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+}
+
+a.result-row:hover { background: var(--pine-tint); }
+
+.result-icon-box {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pine-tint);
+  color: var(--pine);
+}
+
+.result-icon-box svg { width: 15px; height: 15px; display: block; }
+
+.result-row-body { flex: 1; min-width: 0; }
+
+.result-row-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.result-row-meta {
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.result-row .row-chevron { flex-shrink: 0; }
+
+.result-viewall {
+  display: block;
+  text-align: center;
+  padding: 7px 8px;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--pine);
+  border-radius: 8px;
+}
+
+.result-viewall:hover { background: var(--pine-tint); }
+
+.topbar-search-empty {
+  padding: 18px 10px;
+  text-align: center;
+  color: #9A9584;
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.avatar-sm {
+  width: 26px;
+  height: 26px;
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+
+/* --- Contact directory rows --- */
+
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 10px;
+  margin: 0 -10px;
+  border-radius: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+a.contact-row:hover { background: var(--paper); }
+
+.contact-row:last-child { border-bottom: none; }
+
+.contact-row-body { flex: 1; min-width: 0; }
+
+.contact-row-name {
+  font-weight: 600;
+  font-size: 0.97rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contact-row-meta {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  margin-top: 3px;
+}
+
+.contact-row-address {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.contact-row-jobcount {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.contact-row .badge { flex-shrink: 0; }
+
+mark.search-hit {
+  background: var(--gold-light);
+  color: var(--gold-ink);
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
 /* --- Tab bar (shared by Settings' tabs and a job's activity tabs) --- */
 
 .settings-tabs, .tab-bar {

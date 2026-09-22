@@ -295,3 +295,78 @@ function statusSlug(status) {
 function chevronIcon(cls) {
   return `<svg class="${cls || "row-chevron"}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
 }
+
+/* ------------------------------ Search -------------------------------
+   Backs the global search dropdown (js/search.js, wired into the shared
+   topbar on every page) and the plain Contacts directory list — one
+   matching rule so results are identical everywhere text search happens. */
+
+function escapeHtml(str) {
+  return String(str ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function textIncludes(value, q) {
+  return String(value ?? "").toLowerCase().includes(q);
+}
+
+// Lets phone-number/job-number queries match regardless of formatting, e.g.
+// typing "5550148" still finds "(512) 555-0148".
+function digitsInclude(value, q) {
+  const digitsQ = q.replace(/\D/g, "");
+  if (!digitsQ) return false;
+  return String(value ?? "").replace(/\D/g, "").includes(digitsQ);
+}
+
+function jobNumberMatches(job, q) {
+  return textIncludes(`job #${job.job_number}`, q) || digitsInclude(job.job_number, q);
+}
+
+// Wraps the first literal match of `q` inside `text` in <mark>. Digit-only
+// matches (formatting-insensitive phone/job-number hits) have no literal
+// substring to wrap, so they fall back to plain escaped text.
+function highlightMatch(text, q) {
+  const str = String(text ?? "");
+  const safe = escapeHtml(str);
+  if (!q) return safe;
+  const idx = str.toLowerCase().indexOf(q);
+  if (idx === -1) return safe;
+  return escapeHtml(str.slice(0, idx)) +
+    `<mark class="search-hit">${escapeHtml(str.slice(idx, idx + q.length))}</mark>` +
+    escapeHtml(str.slice(idx + q.length));
+}
+
+function initials(name) {
+  return name.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0, 2).toUpperCase();
+}
+
+// One row per contact, or per matching job when the match is job-specific
+// (a job number) — the job is *why* that row matched, so the result points
+// straight at it instead of the contact's profile. Empty query returns no
+// results (the dropdown that consumes this hides itself on empty input).
+function searchDirectory(rawQuery) {
+  const q = rawQuery.trim().toLowerCase();
+  if (!q) return [];
+
+  const contactsByName = [...CONTACTS].sort((a, b) => a.full_name.localeCompare(b.full_name));
+  const results = [];
+  contactsByName.forEach(contact => {
+    const matchedJobs = getJobsForContact(contact.id)
+      .filter(job => jobNumberMatches(job, q))
+      .sort((a, b) => a.job_number - b.job_number);
+
+    if (matchedJobs.length > 0) {
+      matchedJobs.forEach(job => results.push({ contact, job }));
+      return;
+    }
+
+    const contactMatch =
+      textIncludes(contact.full_name, q) ||
+      textIncludes(contact.address, q) ||
+      textIncludes(contact.email, q) ||
+      textIncludes(contact.phone, q) ||
+      digitsInclude(contact.phone, q);
+
+    if (contactMatch) results.push({ contact, job: null });
+  });
+  return results;
+}
