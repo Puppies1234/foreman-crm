@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Contacts — Foreman</title>
+<title>Inventory — Foreman</title>
 <link rel="stylesheet" href="css/styles.css?v=1790451174">
 <script src="js/theme.js?v=1790451174"></script>
 </head>
@@ -15,8 +15,8 @@
       <a class="nav-link" href="index.html">Dashboard</a>
       <a class="nav-link" href="calendar.html">Calendar</a>
       <a class="nav-link" href="boards.html">Boards</a>
-      <a class="nav-link active" href="contacts.html">Contacts</a>
-      <a class="nav-link" href="inventory.html">Inventory</a>
+      <a class="nav-link" href="contacts.html">Contacts</a>
+      <a class="nav-link active" href="inventory.html">Inventory</a>
       <a class="nav-link" href="settings.html">Settings</a>
     </nav>
     <div class="sidebar-footer"><span class="sidebar-footer-name">Foreman Home Services</span><br>Austin, TX</div>
@@ -34,30 +34,13 @@
 
     <div class="page-header toolbar-header">
       <div>
-        <h1>Contacts</h1>
-        <div class="page-subtitle" id="contacts-subtitle">—</div>
+        <h1>Inventory</h1>
+        <div class="page-subtitle" id="inventory-subtitle">—</div>
       </div>
-
-      <div class="page-toolbar">
-        <div class="toolbar-group" id="contacts-rep-filter-group">
-          <label class="toolbar-label" for="contacts-rep-filter">Filter By Rep</label>
-          <select class="select-input" id="contacts-rep-filter"></select>
-        </div>
-
-        <label class="toolbar-label" for="contacts-sort">Sort By</label>
-        <select class="select-input" id="contacts-sort">
-          <option value="name">Name (A–Z)</option>
-          <option value="recent">Recently Active</option>
-        </select>
-      </div>
+      <button type="button" class="btn btn-primary" id="add-item-btn">+ Add Item</button>
     </div>
 
-    <div class="card">
-      <div class="contacts-list-wrap">
-        <div id="contacts-list"></div>
-        <div class="az-rail" id="az-rail"></div>
-      </div>
-    </div>
+    <div class="inventory-grid" id="inventory-grid"></div>
   </main>
 </div>
 
@@ -65,6 +48,6 @@
 <script src="js/search.js?v=1790451174"></script>
 <script src="js/brand.js?v=1790451174"></script>
 <script src="js/features.js?v=1790451174"></script>
-<script src="js/contacts.js?v=1790451174"></script>
+<script src="js/inventory.js?v=1790451174"></script>
 </body>
 </html>

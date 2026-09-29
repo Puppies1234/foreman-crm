@@ -155,6 +155,10 @@ function renderDayColumn(dateObj, { big = false } = {}) {
         <div class="appt-time">${fullTimeRange(appt.start_time, appt.end_time)}</div>
         <div class="appt-title">${job.service_type}</div>
         <div class="appt-customer">${contact.full_name}</div>
+        <div class="appt-badges">
+          <span class="badge ${jobTypeBadgeClass()}">${job.job_type}</span>
+          <span class="badge ${appointmentTypeBadgeClass()}">${job.appointment_type}</span>
+        </div>
       </a>
     `;
   }).join("");

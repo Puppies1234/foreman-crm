@@ -4,21 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Boards — Foreman</title>
-<link rel="stylesheet" href="css/styles.css">
-<script src="js/theme.js"></script>
+<link rel="stylesheet" href="css/styles.css?v=1790451174">
+<script src="js/theme.js?v=1790451174"></script>
 </head>
 <body>
 <div class="app-shell">
   <aside class="sidebar">
-    <div class="brand"><span class="brand-mark"></span>Foreman</div>
+    <div class="brand"><span class="brand-mark" hidden></span><span class="brand-name">Foreman</span></div>
     <nav class="nav-links">
       <a class="nav-link" href="index.html">Dashboard</a>
       <a class="nav-link" href="calendar.html">Calendar</a>
       <a class="nav-link active" href="boards.html">Boards</a>
       <a class="nav-link" href="contacts.html">Contacts</a>
+      <a class="nav-link" href="inventory.html">Inventory</a>
       <a class="nav-link" href="settings.html">Settings</a>
     </nav>
-    <div class="sidebar-footer">Foreman Home Services<br>Austin, TX</div>
+    <div class="sidebar-footer"><span class="sidebar-footer-name">Foreman Home Services</span><br>Austin, TX</div>
   </aside>
 
   <main class="main">
@@ -31,15 +32,17 @@
       </div>
     </div>
 
-    <div class="page-header board-header">
+    <div class="page-header toolbar-header">
       <div>
         <h1>Boards</h1>
         <div class="page-subtitle">Sales — drag a card to move it through the pipeline.</div>
       </div>
 
-      <div class="board-toolbar">
-        <label class="board-filter-label" for="board-rep-filter">Filter by rep</label>
-        <select class="select-input" id="board-rep-filter"></select>
+      <div class="page-toolbar">
+        <div class="toolbar-group" id="board-rep-filter-group">
+          <label class="toolbar-label" for="board-rep-filter">Filter By Rep</label>
+          <select class="select-input" id="board-rep-filter"></select>
+        </div>
       </div>
     </div>
 
@@ -49,8 +52,10 @@
   </main>
 </div>
 
-<script src="js/data.js"></script>
-<script src="js/search.js"></script>
-<script src="js/boards.js"></script>
+<script src="js/data.js?v=1790451174"></script>
+<script src="js/search.js?v=1790451174"></script>
+<script src="js/brand.js?v=1790451174"></script>
+<script src="js/features.js?v=1790451174"></script>
+<script src="js/boards.js?v=1790451174"></script>
 </body>
 </html>

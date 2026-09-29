@@ -24,19 +24,19 @@ const CONTACTS = [
 // role from assigned_to (the field technician doing the work); a job's rep
 // and tech can be the same person or different people.
 const JOBS = [
-  { id: "j1", contact_id: "c1", service_type: "Water heater replacement", job_type: "New Install", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", sales_rep: "Dana Ferris", quote_amount: 1850, intake_notes: "No hot water since yesterday morning. Tank is original to the house, ~14 years old, visible rust at base.", job_number: 1041, date: "2026-09-17" },
-  { id: "j2", contact_id: "c2", service_type: "AC not cooling", job_type: "Repair", urgency: "High", status: "Quoted", assigned_to: "Kim Osei", sales_rep: "Ray Dunmore", quote_amount: 640, intake_notes: "Upstairs unit blowing warm air, outdoor fan not spinning. Thermostat reads 82°F.", job_number: 1036, date: "2026-09-16" },
-  { id: "j3", contact_id: "c3", service_type: "Panel upgrade estimate", job_type: "New Install", urgency: "Low", status: "New Lead", assigned_to: "Unassigned", sales_rep: "Mike Reyes", quote_amount: null, intake_notes: "Wants to upgrade from 100A to 200A ahead of EV charger install. Flexible on timing.", job_number: 1035, date: "2026-09-16" },
-  { id: "j4", contact_id: "c4", service_type: "Clogged main line", job_type: "Repair", urgency: "Medium", status: "Qualified", assigned_to: "Ray Dunmore", sales_rep: "Kim Osei", quote_amount: null, intake_notes: "Slow drainage at all fixtures, backing up in basement floor drain during heavy use.", job_number: 1033, date: "2026-09-15" },
-  { id: "j5", contact_id: "c5", service_type: "Seasonal HVAC tune-up", job_type: "Warranty", urgency: "Low", status: "Scheduled", assigned_to: "Kim Osei", sales_rep: "Ray Dunmore", quote_amount: 189, intake_notes: "Annual maintenance, repeat customer. No known issues.", job_number: 1028, date: "2026-09-10" },
-  { id: "j6", contact_id: "c6", service_type: "Outlet not working", job_type: "Repair", urgency: "Medium", status: "Completed", assigned_to: "Nia Brackett", sales_rep: "Mike Reyes", quote_amount: 220, intake_notes: "Kitchen GFCI tripped and won't reset. Two downstream outlets also dead.", job_number: 1040, date: "2026-09-17" },
-  { id: "j7", contact_id: "c1", service_type: "Leaky faucet, guest bath", job_type: "Repair", urgency: "Low", status: "New Lead", assigned_to: "Unassigned", sales_rep: "Kim Osei", quote_amount: null, intake_notes: "Steady drip at cold handle, worsening over the last week.", job_number: 1044, date: "2026-09-17" },
-  { id: "j8", contact_id: "c4", service_type: "Circuit breaker tripping", job_type: "Warranty", urgency: "Medium", status: "Qualified", assigned_to: "Nia Brackett", sales_rep: "Dana Ferris", quote_amount: null, intake_notes: "Breaker for garage trips within minutes of using table saw. Suspect undersized circuit.", job_number: 1032, date: "2026-09-14" },
-  { id: "j9", contact_id: "c7", service_type: "Emergency pipe burst", job_type: "Repair", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", sales_rep: "Dana Ferris", quote_amount: null, intake_notes: "Burst supply line under kitchen sink, water shut off at the main. Needs same-weekend repair.", job_number: 1039, date: "2026-09-17" },
+  { id: "j1", contact_id: "c1", service_type: "Water heater replacement", job_type: "New Install", appointment_type: "Initial Appointment", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", sales_rep: "Dana Ferris", quote_amount: 1850, intake_notes: "No hot water since yesterday morning. Tank is original to the house, ~14 years old, visible rust at base.", job_number: 1041, date: "2026-09-17" },
+  { id: "j2", contact_id: "c2", service_type: "AC not cooling", job_type: "Repair", appointment_type: "Appointment", urgency: "High", status: "Estimating", assigned_to: "Kim Osei", sales_rep: "Ray Dunmore", quote_amount: 640, intake_notes: "Upstairs unit blowing warm air, outdoor fan not spinning. Thermostat reads 82°F.", job_number: 1036, date: "2026-09-16" },
+  { id: "j3", contact_id: "c3", service_type: "Panel upgrade estimate", job_type: "New Install", appointment_type: "Initial Appointment", urgency: "Low", status: "New Lead", assigned_to: "Unassigned", sales_rep: "Mike Reyes", quote_amount: null, intake_notes: "Wants to upgrade from 100A to 200A ahead of EV charger install. Flexible on timing.", job_number: 1035, date: "2026-09-16" },
+  { id: "j4", contact_id: "c4", service_type: "Clogged main line", job_type: "Repair", appointment_type: "Appointment", urgency: "Medium", status: "Qualified", assigned_to: "Ray Dunmore", sales_rep: "Kim Osei", quote_amount: null, intake_notes: "Slow drainage at all fixtures, backing up in basement floor drain during heavy use.", job_number: 1033, date: "2026-09-15" },
+  { id: "j5", contact_id: "c5", service_type: "Seasonal HVAC tune-up", job_type: "Warranty", appointment_type: "Appointment", urgency: "Low", status: "Scheduled", assigned_to: "Kim Osei", sales_rep: "Ray Dunmore", quote_amount: 189, intake_notes: "Annual maintenance, repeat customer. No known issues.", job_number: 1028, date: "2026-09-10" },
+  { id: "j6", contact_id: "c6", service_type: "Outlet not working", job_type: "Repair", appointment_type: "Appointment", urgency: "Medium", status: "Completed", assigned_to: "Nia Brackett", sales_rep: "Mike Reyes", quote_amount: 220, intake_notes: "Kitchen GFCI tripped and won't reset. Two downstream outlets also dead.", job_number: 1040, date: "2026-09-17" },
+  { id: "j7", contact_id: "c1", service_type: "Leaky faucet, guest bath", job_type: "Repair", appointment_type: "Appointment", urgency: "Low", status: "New Lead", assigned_to: "Unassigned", sales_rep: "Kim Osei", quote_amount: null, intake_notes: "Steady drip at cold handle, worsening over the last week.", job_number: 1044, date: "2026-09-17" },
+  { id: "j8", contact_id: "c4", service_type: "Circuit breaker tripping", job_type: "Warranty", appointment_type: "Appointment", urgency: "Medium", status: "Qualified", assigned_to: "Nia Brackett", sales_rep: "Dana Ferris", quote_amount: null, intake_notes: "Breaker for garage trips within minutes of using table saw. Suspect undersized circuit.", job_number: 1032, date: "2026-09-14" },
+  { id: "j9", contact_id: "c7", service_type: "Emergency pipe burst", job_type: "Repair", appointment_type: "Appointment", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", sales_rep: "Dana Ferris", quote_amount: null, intake_notes: "Burst supply line under kitchen sink, water shut off at the main. Needs same-weekend repair.", job_number: 1039, date: "2026-09-17" },
   // Sarah Mitchell has two separate jobs, months apart — the case that proves
   // job-scoped data (messages/calls/documents/photos) never bleeds between them.
-  { id: "j10", contact_id: "c8", service_type: "Water heater replacement", job_type: "New Install", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", sales_rep: "Dana Ferris", quote_amount: 1780, intake_notes: "No hot water since this morning, slight moisture at the tank valve. Unit is original to the house.", job_number: 1042, date: "2026-09-16" },
-  { id: "j11", contact_id: "c8", service_type: "Kitchen faucet install", job_type: "New Install", urgency: "Low", status: "Completed", assigned_to: "Ray Dunmore", sales_rep: "Kim Osei", quote_amount: 310, intake_notes: "Customer purchased a new pull-down faucet; needs the old one removed and the new one installed and tested.", job_number: 1038, date: "2026-08-10" },
+  { id: "j10", contact_id: "c8", service_type: "Water heater replacement", job_type: "New Install", appointment_type: "Initial Appointment", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", sales_rep: "Dana Ferris", quote_amount: 1780, intake_notes: "No hot water since this morning, slight moisture at the tank valve. Unit is original to the house.", job_number: 1042, date: "2026-09-16" },
+  { id: "j11", contact_id: "c8", service_type: "Kitchen faucet install", job_type: "New Install", appointment_type: "Initial Appointment", urgency: "Low", status: "Completed", assigned_to: "Ray Dunmore", sales_rep: "Kim Osei", quote_amount: 310, intake_notes: "Customer purchased a new pull-down faucet; needs the old one removed and the new one installed and tested.", job_number: 1038, date: "2026-08-10" },
 ];
 
 // job_location is the address work actually happens at — its own field on
@@ -185,7 +185,7 @@ const ACTIVITY_LOG = [
   { id: "log7", type: "Job qualified", related_job_id: "j4", description: "Flagged Wes Trammell's clogged main line as likely needing a camera inspection based on symptoms described in intake.", requires_review: true, timestamp: "2026-09-16T15:40" },
 ];
 
-const STATUS_PIPELINE = ["New Lead", "Qualified", "Scheduled", "Quoted", "Completed"];
+const STATUS_PIPELINE = ["New Lead", "Qualified", "Scheduled", "Estimating", "Proposal Sent", "Proposal Signed", "Completed"];
 
 /* ------------------------------ Job status ---------------------------------
    Status can change from two places — dragging a card on the Boards page, or
@@ -230,6 +230,13 @@ function setJobStatus(jobId, status) {
   const overrides = readStatusOverrides();
   overrides[jobId] = status;
   writeStatusOverrides(overrides);
+
+  // Every path that changes status — the job page's pills, a Boards drag —
+  // funnels through here, so this is the one place Completed can trigger
+  // materials deduction. deductMaterialsForJob() is itself idempotent (see
+  // its own flag below), so this can fire on every arrival at Completed
+  // without double-deducting.
+  if (status === "Completed") deductMaterialsForJob(jobId);
 }
 
 /* ------------------------------ Job urgency ---------------------------------
@@ -273,6 +280,63 @@ function setJobUrgency(jobId, urgency) {
   const overrides = readUrgencyOverrides();
   overrides[jobId] = urgency;
   writeUrgencyOverrides(overrides);
+}
+
+/* --------------------------- Job appointment type ----------------------------
+   Same shape as Urgency above, and independent from Job Type (a separate
+   field entirely) — its own picker, own store, own setter. A disabled label
+   (Settings → Features → Job & Appointment Labels) can still be applied here
+   if a job already carries it; that filtering happens only where dropdown
+   *choices* are built (enabledAppointmentTypes below), never here. */
+const APPOINTMENT_TYPES = ["Initial Appointment", "Appointment"];
+const JOB_APPOINTMENT_TYPE_STORAGE_KEY = "foreman-job-appointment-type";
+let inMemoryAppointmentTypeOverrides = null;
+
+function readAppointmentTypeOverrides() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_APPOINTMENT_TYPE_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return inMemoryAppointmentTypeOverrides || {};
+}
+
+function writeAppointmentTypeOverrides(overrides) {
+  inMemoryAppointmentTypeOverrides = overrides;
+  try {
+    localStorage.setItem(JOB_APPOINTMENT_TYPE_STORAGE_KEY, JSON.stringify(overrides));
+  } catch (e) {}
+}
+
+(function applyAppointmentTypeOverrides() {
+  const overrides = readAppointmentTypeOverrides();
+  JOBS.forEach(job => {
+    if (overrides[job.id] && APPOINTMENT_TYPES.includes(overrides[job.id])) {
+      job.appointment_type = overrides[job.id];
+    }
+  });
+})();
+
+function setJobAppointmentType(jobId, appointmentType) {
+  const job = getJob(jobId);
+  if (!job || job.appointment_type === appointmentType) return;
+  job.appointment_type = appointmentType;
+  const overrides = readAppointmentTypeOverrides();
+  overrides[jobId] = appointmentType;
+  writeAppointmentTypeOverrides(overrides);
+}
+
+// Settings → Features → Job & Appointment Labels filters which values are
+// offered as NEW choices in the Job Type select and the Appointment Type
+// picker — a disabled label never disappears from a job it's already set
+// to, so `currentValue` is always included even if its own toggle is off.
+function enabledJobTypes(currentValue) {
+  const map = getFeatures().jobAppointmentLabels.job_type;
+  return JOB_TYPES.filter(v => map[v] !== false || v === currentValue);
+}
+
+function enabledAppointmentTypes(currentValue) {
+  const map = getFeatures().jobAppointmentLabels.appointment_type;
+  return APPOINTMENT_TYPES.filter(v => map[v] !== false || v === currentValue);
 }
 
 /* ------------------------------ Sales reps ----------------------------------
@@ -481,13 +545,16 @@ function setContactDetails(contactId, details) {
 }
 
 /* ---------------------------- Job details (editable) -------------------------
-   job_type, quote_amount, intake_notes, and job_location — plain fields
-   directly on the Job object, edited together via the Job card's own
-   Edit/Save/Cancel flow. Mirrors the Contact card's foreman-contact-details
-   store above, one key per record, but this one's keyed by job id and
-   fully separate from it (and from status/urgency/sales-rep). The card's
-   Edit form also edits the job's appointment time, but that's a different
-   entity — see setAppointmentTime() below, its own store. */
+   quote_amount, intake_notes, and job_location — plain fields directly on
+   the Job object, edited together via the Job card's own Edit/Save/Cancel
+   flow. Job Type used to live here too; it's now its own always-on picker
+   (see "Job type" below), same as Urgency/Sales Rep/Assigned To/Appointment
+   Type, so it's deliberately NOT part of this draft/save/cancel object
+   anymore. Mirrors the Contact card's foreman-contact-details store above,
+   one key per record, but this one's keyed by job id and fully separate
+   from it (and from status/urgency/sales-rep). The card's Edit form also
+   edits the job's appointment time, but that's a different entity — see
+   setAppointmentTime() below, its own store. */
 const JOB_TYPES = ["Repair", "New Install", "Warranty"];
 const JOB_DETAILS_STORAGE_KEY = "foreman-job-details";
 let inMemoryJobDetailsOverrides = null; // fallback if localStorage throws/unavailable
@@ -512,7 +579,6 @@ function writeJobDetailsOverrides(overrides) {
   JOBS.forEach(job => {
     const saved = overrides[job.id];
     if (!saved) return;
-    if (saved.job_type !== undefined) job.job_type = saved.job_type;
     if (saved.quote_amount !== undefined) job.quote_amount = saved.quote_amount;
     if (saved.intake_notes !== undefined) job.intake_notes = saved.intake_notes;
     if (saved.job_location !== undefined) job.job_location = saved.job_location;
@@ -522,19 +588,60 @@ function writeJobDetailsOverrides(overrides) {
 function setJobDetails(jobId, details) {
   const job = getJob(jobId);
   if (!job) return;
-  job.job_type = details.job_type;
   job.quote_amount = details.quote_amount;
   job.intake_notes = details.intake_notes;
   job.job_location = details.job_location;
 
   const overrides = readJobDetailsOverrides();
   overrides[jobId] = {
-    job_type: details.job_type,
     quote_amount: details.quote_amount,
     intake_notes: details.intake_notes,
     job_location: details.job_location,
   };
   writeJobDetailsOverrides(overrides);
+}
+
+/* -------------------------------- Job type -----------------------------------
+   Pulled out of the Edit/Save/Cancel job-details store above into its own
+   picker store — same shape as Appointment Type just below, and the same
+   reasoning: Job Type shows up wherever a job does (its own card, Boards,
+   Calendar, Today's Schedule, Recently Viewed, the Contacts Jobs index), so
+   a change from any one of them must show up in all the others immediately,
+   the same guarantee every other picker field in this file already gives. */
+const JOB_TYPE_STORAGE_KEY = "foreman-job-type";
+let inMemoryJobTypeOverrides = null;
+
+function readJobTypeOverrides() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_TYPE_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return inMemoryJobTypeOverrides || {};
+}
+
+function writeJobTypeOverrides(overrides) {
+  inMemoryJobTypeOverrides = overrides;
+  try {
+    localStorage.setItem(JOB_TYPE_STORAGE_KEY, JSON.stringify(overrides));
+  } catch (e) {}
+}
+
+(function applyJobTypeOverrides() {
+  const overrides = readJobTypeOverrides();
+  JOBS.forEach(job => {
+    if (overrides[job.id] && JOB_TYPES.includes(overrides[job.id])) {
+      job.job_type = overrides[job.id];
+    }
+  });
+})();
+
+function setJobType(jobId, jobType) {
+  const job = getJob(jobId);
+  if (!job || job.job_type === jobType) return;
+  job.job_type = jobType;
+  const overrides = readJobTypeOverrides();
+  overrides[jobId] = jobType;
+  writeJobTypeOverrides(overrides);
 }
 
 // The rule a new job must follow at creation time: its job_location starts
@@ -551,7 +658,7 @@ function defaultJobLocationForNewJob(contact) {
 /* -------------------------- Appointment time (editable) ----------------------
    An appointment is its own entity (APPOINTMENTS), not a field on Job, but
    the Job card's Edit form edits its date/start/end time alongside
-   job_type/quote_amount/intake_notes. This app assumes at most one
+   quote_amount/intake_notes/job_location. This app assumes at most one
    appointment per job — same assumption getAppointmentForJob() already
    makes with .find() — so this store is keyed by job id, not appointment
    id. Saving for a job with no existing appointment creates one
@@ -698,7 +805,9 @@ function statusBadgeClass(status) {
     "New Lead": "badge-lead",
     "Qualified": "badge-qualified",
     "Scheduled": "badge-scheduled",
-    "Quoted": "badge-quoted",
+    "Estimating": "badge-estimating",
+    "Proposal Sent": "badge-proposal-sent",
+    "Proposal Signed": "badge-proposal-signed",
     "Completed": "badge-completed",
   };
   return map[status] || "badge-lead";
@@ -743,7 +852,18 @@ const PICKER_FIELDS = {
   // Same roster/badge colors as Sales Rep (same people, same identity
   // colors) — a different field on the job entirely, own store above.
   assigned_to: { setValue: (id, v) => setJobAssignedTo(id, v), badgeClass: salesRepBadgeClass },
+  // One flat color for the whole field (not per-value, unlike Urgency/reps)
+  // — Appointment Type is a category tag, not an identity, so every option
+  // shares appointmentTypeBadgeClass.
+  appointment_type: { setValue: (id, v) => setJobAppointmentType(id, v), badgeClass: appointmentTypeBadgeClass },
+  job_type: { setValue: (id, v) => setJobType(id, v), badgeClass: jobTypeBadgeClass },
 };
+
+// Flat, single-color badge classes for Job Type and Appointment Type tags —
+// deliberately their own color families (moss / plum), distinct from each
+// other and from every status/urgency/rep badge already in the app.
+function jobTypeBadgeClass() { return "badge-job-type"; }
+function appointmentTypeBadgeClass() { return "badge-appt-type"; }
 
 function pickerHtml(field, entityId, options, currentValue) {
   const badgeClass = PICKER_FIELDS[field].badgeClass;
@@ -774,6 +894,14 @@ function assignedToPickerHtml(job) {
 
 function contactSalesRepPickerHtml(contact) {
   return pickerHtml("contact_sales_rep", contact.id, SALES_REPS, contact.sales_rep);
+}
+
+function appointmentTypePickerHtml(job) {
+  return pickerHtml("appointment_type", job.id, enabledAppointmentTypes(job.appointment_type), job.appointment_type);
+}
+
+function jobTypePickerHtml(job) {
+  return pickerHtml("job_type", job.id, enabledJobTypes(job.job_type), job.job_type);
 }
 
 // Closing on an outside click/scroll is one listener shared by every picker
@@ -840,7 +968,9 @@ const STATUS_SLUGS = {
   "New Lead": "lead",
   "Qualified": "qualified",
   "Scheduled": "scheduled",
-  "Quoted": "quoted",
+  "Estimating": "estimating",
+  "Proposal Sent": "proposal-sent",
+  "Proposal Signed": "proposal-signed",
   "Completed": "completed",
 };
 function statusSlug(status) {
@@ -927,4 +1057,554 @@ function searchDirectory(rawQuery) {
     if (contactMatch) results.push({ contact, job: null });
   });
   return results;
+}
+
+/* ------------------------------ Review checklists ----------------------------
+   Backs the Dashboard's 4 clickable stat cards and review.html, the shared
+   drill-down list page each one links to (review.html?type=leads, etc.).
+   Each list has its own checked/unchecked state — one boolean per job id,
+   in its own localStorage key — completely independent of the other three
+   and of every other store in this file: checking an item off here never
+   changes the job's real status/urgency/etc., it only marks that this
+   *review* has been done. Both the stat card count (js/dashboard.js) and
+   the list page itself (js/review.js) call reviewRemainingCount()/
+   getItems(), so they can never disagree about what's left. */
+function readCheckedIds(storageKey) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(storageKey));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return {};
+}
+
+function isChecked(storageKey, id) {
+  return !!readCheckedIds(storageKey)[id];
+}
+
+function setChecked(storageKey, id, checked) {
+  const ids = readCheckedIds(storageKey);
+  if (checked) ids[id] = true;
+  else delete ids[id];
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(ids));
+  } catch (e) {}
+}
+
+const REVIEW_LISTS = {
+  leads: {
+    title: "New Leads This Week",
+    verb: "reviewed",
+    storageKey: "foreman-leads-reviewed",
+    getItems: () => JOBS.filter(j => j.status === "New Lead"),
+    getId: job => job.id,
+  },
+  appointments: {
+    title: "Appointments Today",
+    verb: "completed",
+    storageKey: "foreman-appointments-completed",
+    // Same set as the Dashboard's "Today's schedule" card.
+    getItems: () => APPOINTMENTS.filter(a => a.start_time.startsWith(TODAY)),
+    getId: appt => appt.job_id,
+  },
+  followups: {
+    title: "Follow-Ups Awaiting Approval",
+    verb: "approved",
+    storageKey: "foreman-followups-approved",
+    getItems: () => FOLLOW_UPS.filter(f => f.status === "drafted"),
+    getId: followUp => followUp.job_id,
+  },
+  priority: {
+    title: "Priority",
+    verb: "resolved",
+    storageKey: "foreman-priority-resolved",
+    // There's no "missed call" or "overdue quote" concept in the data
+    // model (the dashboard's old priorityCount was a flat mock number —
+    // see js/dashboard.js history). Unconfirmed appointments are the one
+    // sub-category with real backing data, so that's what this list, and
+    // the stat card's count, are actually built from.
+    getItems: () => APPOINTMENTS.filter(a => a.status === "Pending confirmation"),
+    getId: appt => appt.job_id,
+  },
+};
+
+function reviewRemainingCount(type) {
+  const list = REVIEW_LISTS[type];
+  return list.getItems().filter(item => !isChecked(list.storageKey, list.getId(item))).length;
+}
+
+/* --------------------------- Activity feed checkboxes -------------------------
+   The Dashboard's AI Activity Feed gets its own checkbox per item, but it
+   doesn't get its own independent checked-state for anything that already
+   has one: a "needs review" item tied to a drafted follow-up shares
+   REVIEW_LISTS.followups' store (checking it here or on that review page
+   is the same action, same isChecked()/setChecked() calls). Only an item
+   with nothing to share — no review link at all, or a review flag with no
+   matching review list yet — gets its own simple dismissed flag here. */
+const ACTIVITY_DISMISSED_STORAGE_KEY = "foreman-activity-dismissed";
+
+// Which review.html list (if any) actually owns this "needs review" item's
+// decision. Right now only drafted follow-ups have one (REVIEW_LISTS.
+// followups); a review flag with no matching drafted follow-up — e.g. a
+// flagged/qualified-job note — has no review page of its own yet, so it
+// falls back to the plain dismissed flag like a non-review item.
+function activityReviewType(item) {
+  if (!item.requires_review || !item.related_job_id) return null;
+  const followUp = getFollowUpForJob(item.related_job_id);
+  if (followUp && followUp.status === "drafted") return "followups";
+  return null;
+}
+
+function isActivityItemHandled(item) {
+  const type = activityReviewType(item);
+  if (type) return isChecked(REVIEW_LISTS[type].storageKey, item.related_job_id);
+  return isChecked(ACTIVITY_DISMISSED_STORAGE_KEY, item.id);
+}
+
+function setActivityItemHandled(item, handled) {
+  const type = activityReviewType(item);
+  if (type) setChecked(REVIEW_LISTS[type].storageKey, item.related_job_id, handled);
+  else setChecked(ACTIVITY_DISMISSED_STORAGE_KEY, item.id, handled);
+}
+
+/* ------------------------------ Recently viewed ------------------------------
+   Real visit tracking for the Dashboard's "Recently viewed" row — every
+   load of contact.html (either view: a contact's profile, or a specific
+   job) calls recordRecentlyViewed() with whichever one was actually shown.
+   Re-visiting the same (kind, id) moves it back to the front instead of
+   duplicating it; the list is capped at 6 entries. Timestamps here are
+   real wall-clock time (an actual browser visit just happened), unlike
+   every other timestamp in this file, which is fictional mock data on the
+   app's simulated TODAY. */
+const RECENTLY_VIEWED_STORAGE_KEY = "foreman-recently-viewed";
+const RECENTLY_VIEWED_CAP = 6;
+
+function readRecentlyViewed() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_STORAGE_KEY));
+    if (Array.isArray(stored)) return stored;
+  } catch (e) {}
+  return [];
+}
+
+function writeRecentlyViewed(list) {
+  try {
+    localStorage.setItem(RECENTLY_VIEWED_STORAGE_KEY, JSON.stringify(list));
+  } catch (e) {}
+}
+
+function recordRecentlyViewed(kind, id) {
+  let list = readRecentlyViewed().filter(entry => !(entry.kind === kind && entry.id === id));
+  list.unshift({ kind, id, timestamp: new Date().toISOString() });
+  writeRecentlyViewed(list.slice(0, RECENTLY_VIEWED_CAP));
+}
+
+// Resolves the raw (kind, id) visit log into the job-shaped cards the
+// Dashboard already knows how to draw: a "job" visit is that job directly;
+// a "contact" visit (the profile view, no specific job) stands in as that
+// contact's own most recently opened job, since the card format needs one.
+// Two log entries that happen to resolve to the same job (e.g. visiting a
+// job, then its parent contact) collapse to one card, not a duplicate.
+function getRecentlyViewedJobs() {
+  const jobs = [];
+  const seen = new Set();
+  readRecentlyViewed().forEach(entry => {
+    let job = null;
+    if (entry.kind === "job") {
+      job = getJob(entry.id);
+    } else if (entry.kind === "contact") {
+      const contactJobs = [...getJobsForContact(entry.id)].sort((a, b) => b.date.localeCompare(a.date));
+      job = contactJobs[0] || null;
+    }
+    if (job && !seen.has(job.id)) {
+      seen.add(job.id);
+      jobs.push(job);
+    }
+  });
+  return jobs;
+}
+
+/* -------------------------------- Inventory -----------------------------------
+   Inventory items (id, name, description, quantity, unit_price, photo data
+   URL) live entirely in their own store — unlike every other store in this
+   file, this one holds the full records themselves (items get created and
+   deleted, not just a field override on a fixed mock array), seeded once
+   from INVENTORY_SEED the first time the app runs. */
+const INVENTORY_STORAGE_KEY = "foreman-inventory";
+const LOW_STOCK_THRESHOLD = 3;
+
+const INVENTORY_SEED = [
+  { id: "inv1", name: "Water Heater — 50 Gal Gas", description: "Standard 50-gallon gas water heater, 6-year warranty.", quantity: 4, unit_price: 850, photo: null },
+  { id: "inv2", name: "PEX Fittings — 1/2\" (10-pack)", description: "Half-inch PEX crimp fittings, brass, box of 10.", quantity: 22, unit_price: 18, photo: null },
+  { id: "inv3", name: "Shutoff Valve — 1/4 Turn", description: "Quarter-turn ball valve, 1/2\" compression.", quantity: 15, unit_price: 12, photo: null },
+  { id: "inv4", name: "Copper Pipe — 3/4\" (10ft)", description: "Type L copper pipe, 3/4 inch, 10-foot length.", quantity: 8, unit_price: 34, photo: null },
+  { id: "inv5", name: "Garbage Disposal — 1/2 HP", description: "Standard 1/2 HP continuous-feed disposal unit.", quantity: 3, unit_price: 95, photo: null },
+  { id: "inv6", name: "Wax Toilet Ring", description: "Standard wax ring with flange, for toilet installation.", quantity: 30, unit_price: 5, photo: null },
+];
+
+function readInventory() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(INVENTORY_STORAGE_KEY));
+    if (Array.isArray(stored)) return stored;
+  } catch (e) {}
+  return null;
+}
+
+function writeInventory(items) {
+  try {
+    localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(items));
+  } catch (e) {}
+}
+
+let INVENTORY = readInventory();
+if (!INVENTORY) {
+  INVENTORY = INVENTORY_SEED.map(item => Object.assign({}, item));
+  writeInventory(INVENTORY);
+}
+
+function getInventoryItem(id) {
+  return INVENTORY.find(item => item.id === id);
+}
+
+function isLowStock(item) {
+  return item.quantity <= LOW_STOCK_THRESHOLD;
+}
+
+function generateInventoryId() {
+  return "inv" + Date.now() + Math.floor(Math.random() * 1000);
+}
+
+function addInventoryItem(details) {
+  const item = {
+    id: generateInventoryId(),
+    name: details.name,
+    description: details.description,
+    quantity: details.quantity,
+    unit_price: details.unit_price,
+    photo: details.photo || null,
+  };
+  INVENTORY.push(item);
+  writeInventory(INVENTORY);
+  return item;
+}
+
+function updateInventoryItem(id, details) {
+  const item = getInventoryItem(id);
+  if (!item) return;
+  item.name = details.name;
+  item.description = details.description;
+  item.quantity = details.quantity;
+  item.unit_price = details.unit_price;
+  item.photo = details.photo;
+  writeInventory(INVENTORY);
+}
+
+function deleteInventoryItem(id) {
+  INVENTORY = INVENTORY.filter(item => item.id !== id);
+  writeInventory(INVENTORY);
+}
+
+// The ONLY sanctioned way to change quantity on hand — both manual
+// restocking (js/inventory.js) and automatic Completed-job deduction
+// (deductMaterialsForJob below) go through this, no floor at zero: a job
+// completing with more material used than is on hand should still deduct
+// and show the resulting negative, not silently clamp or block.
+function adjustInventoryQuantity(id, delta) {
+  const item = getInventoryItem(id);
+  if (!item) return;
+  item.quantity += delta;
+  writeInventory(INVENTORY);
+}
+
+/* --------------------------- Materials used (per job) -------------------------
+   Which inventory items, and how many of each, a job used — its own store,
+   keyed by job id, completely separate from the Job card's Edit/Save/Cancel
+   fields: additions and removals save immediately, same as the status
+   pills. Also what deductMaterialsForJob() below reads when a job first
+   reaches Completed. */
+const JOB_MATERIALS_STORAGE_KEY = "foreman-job-materials";
+
+function readJobMaterialsStore() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_MATERIALS_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return {};
+}
+
+function writeJobMaterialsStore(store) {
+  try {
+    localStorage.setItem(JOB_MATERIALS_STORAGE_KEY, JSON.stringify(store));
+  } catch (e) {}
+}
+
+function getMaterialsForJob(jobId) {
+  return readJobMaterialsStore()[jobId] || [];
+}
+
+// Adding the same item twice merges into one line (quantity adds up)
+// rather than creating a second row for it.
+function addMaterialToJob(jobId, inventoryId, quantity) {
+  const store = readJobMaterialsStore();
+  const list = store[jobId] || [];
+  const existing = list.find(m => m.inventory_id === inventoryId);
+  if (existing) existing.quantity += quantity;
+  else list.push({ inventory_id: inventoryId, quantity });
+  store[jobId] = list;
+  writeJobMaterialsStore(store);
+}
+
+function removeMaterialFromJob(jobId, inventoryId) {
+  const store = readJobMaterialsStore();
+  store[jobId] = (store[jobId] || []).filter(m => m.inventory_id !== inventoryId);
+  writeJobMaterialsStore(store);
+}
+
+// One real cap, applied to every upload regardless of which tab it came
+// from: localStorage's own quota (usually 5-10MB per origin, shared by
+// every store this app already keeps there) is the actual ceiling, but a
+// single file can't be allowed to approach it alone, so this is the
+// per-file gate uploads are checked against before ever reading the file.
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/* ------------------------- Uploaded documents (per job) -----------------------
+   Real uploads, stored as data URLs — a separate store from the mocked
+   DOCUMENTS array above (which stays as seed/example content and is never
+   written to). js/contact.js merges both lists at render time; this store
+   is the only one ever added to or removed from. Same keyed-by-job-id,
+   save-immediately shape as Materials Used just above. */
+const JOB_UPLOADED_DOCUMENTS_STORAGE_KEY = "foreman-job-uploaded-documents";
+
+function readUploadedDocumentsStore() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_UPLOADED_DOCUMENTS_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return {};
+}
+
+// Returns false (instead of throwing) if localStorage's real quota is hit —
+// callers show an error rather than silently losing the upload or crashing.
+function writeUploadedDocumentsStore(store) {
+  try {
+    localStorage.setItem(JOB_UPLOADED_DOCUMENTS_STORAGE_KEY, JSON.stringify(store));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getUploadedDocumentsForJob(jobId) {
+  return readUploadedDocumentsStore()[jobId] || [];
+}
+
+function addUploadedDocumentToJob(jobId, doc) {
+  const store = readUploadedDocumentsStore();
+  const list = store[jobId] || [];
+  list.push(doc);
+  store[jobId] = list;
+  return writeUploadedDocumentsStore(store);
+}
+
+function removeUploadedDocumentFromJob(jobId, docId) {
+  const store = readUploadedDocumentsStore();
+  store[jobId] = (store[jobId] || []).filter(d => d.id !== docId);
+  writeUploadedDocumentsStore(store);
+}
+
+/* --------------------------- Uploaded photos (per job) -------------------------
+   Same shape as uploaded documents just above, kept in its own store since
+   a photo carries a caption instead of a file size — separate from the
+   mocked PHOTOS array, which stays seed content and is never written to. */
+const JOB_UPLOADED_PHOTOS_STORAGE_KEY = "foreman-job-uploaded-photos";
+
+function readUploadedPhotosStore() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_UPLOADED_PHOTOS_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return {};
+}
+
+function writeUploadedPhotosStore(store) {
+  try {
+    localStorage.setItem(JOB_UPLOADED_PHOTOS_STORAGE_KEY, JSON.stringify(store));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getUploadedPhotosForJob(jobId) {
+  return readUploadedPhotosStore()[jobId] || [];
+}
+
+function addUploadedPhotoToJob(jobId, photo) {
+  const store = readUploadedPhotosStore();
+  const list = store[jobId] || [];
+  list.push(photo);
+  store[jobId] = list;
+  return writeUploadedPhotosStore(store);
+}
+
+function removeUploadedPhotoFromJob(jobId, photoId) {
+  const store = readUploadedPhotosStore();
+  store[jobId] = (store[jobId] || []).filter(p => p.id !== photoId);
+  writeUploadedPhotosStore(store);
+}
+
+/* ------------------------- Estimate templates (Settings) -----------------------
+   Reusable line-item sets managed in Settings → Estimates, independent of
+   any job. Starting a job's estimate from one (startJobEstimate below) deep-
+   copies its line items in — a one-time copy, never a live link: editing a
+   job's estimate afterward never touches the template, and editing the
+   template later never touches an estimate already started from it. */
+const ESTIMATE_TEMPLATES_STORAGE_KEY = "foreman-estimate-templates";
+
+function getEstimateTemplates() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(ESTIMATE_TEMPLATES_STORAGE_KEY));
+    if (Array.isArray(stored)) return stored;
+  } catch (e) {}
+  return [];
+}
+
+function setEstimateTemplates(templates) {
+  try {
+    localStorage.setItem(ESTIMATE_TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
+  } catch (e) {}
+}
+
+function estimateLineItemsTotal(lineItems) {
+  return lineItems.reduce((sum, li) => sum + (Number(li.quantity) || 0) * (Number(li.price) || 0), 0);
+}
+
+function newEstimateLineItem() {
+  return {
+    id: "li-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+    name: "",
+    description: "",
+    quantity: 1,
+    price: 0,
+  };
+}
+
+/* ---------------------------- Job estimates (per job) --------------------------
+   A job can have several independent estimates, not just one — each with
+   its own name, own line items, own total. Own store, keyed by job id, to
+   an ARRAY of estimates (same isolation principle as Materials Used/
+   uploaded documents/photos above: nothing here ever touches another job's
+   list, or the templates a given estimate might have started from).
+   Deliberately separate from the Job card's own Quote Amount field — not
+   auto-linked yet. */
+const JOB_ESTIMATES_STORAGE_KEY = "foreman-job-estimates";
+
+function readJobEstimatesStore() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOB_ESTIMATES_STORAGE_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch (e) {}
+  return {};
+}
+
+function writeJobEstimatesStore(store) {
+  try {
+    localStorage.setItem(JOB_ESTIMATES_STORAGE_KEY, JSON.stringify(store));
+  } catch (e) {}
+}
+
+// A job's entry here was, for a while, a single estimate object rather than
+// an array (before estimates supported more than one per job). Any data
+// saved under that shape gets migrated in place, once, the first time it's
+// read — wrapped into a one-item array with a real id/name — so it keeps
+// showing up instead of silently vanishing (or, worse, making every caller
+// here treat an object as an array and render nothing without ever
+// throwing, which is exactly what happened before this migration existed).
+function getEstimatesForJob(jobId) {
+  const store = readJobEstimatesStore();
+  const entry = store[jobId];
+  if (!entry) return [];
+  if (Array.isArray(entry)) return entry;
+
+  const migrated = [{
+    id: "est-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+    name: "Estimate 1",
+    lineItems: Array.isArray(entry.lineItems) ? entry.lineItems : [],
+    started_from_template_id: entry.started_from_template_id || null,
+    created_at: entry.created_at || new Date().toISOString(),
+  }];
+  store[jobId] = migrated;
+  writeJobEstimatesStore(store);
+  return migrated;
+}
+
+// Just the copied line items, independent of the template from the moment
+// they're copied (JSON round-trip, same trick used everywhere else in this
+// app a draft must never share structure with its source) — used to seed a
+// brand-new estimate that isn't saved into the job's list yet. Nothing is
+// written to storage here; saveNewEstimateForJob below is what actually
+// commits a new estimate.
+function estimateLineItemsFromTemplate(templateId) {
+  if (!templateId) return [];
+  const template = getEstimateTemplates().find(t => t.id === templateId);
+  return template ? JSON.parse(JSON.stringify(template.lineItems)) : [];
+}
+
+// The smallest "Estimate N" number not already used by any of this job's
+// CURRENT estimates — deleting Estimate 1 frees up 1 again, but a still-in-
+// use number is never reused just because it looks next in sequence.
+function nextAvailableEstimateName(estimates) {
+  const used = new Set();
+  estimates.forEach(e => {
+    const m = /^Estimate (\d+)$/.exec((e.name || "").trim());
+    if (m) used.add(parseInt(m[1], 10));
+  });
+  let n = 1;
+  while (used.has(n)) n++;
+  return "Estimate " + n;
+}
+
+function saveNewEstimateForJob(jobId, estimate) {
+  const store = readJobEstimatesStore();
+  const list = Array.isArray(store[jobId]) ? store[jobId] : [];
+  list.push(estimate);
+  store[jobId] = list;
+  writeJobEstimatesStore(store);
+}
+
+function updateEstimateForJob(jobId, estimate) {
+  const store = readJobEstimatesStore();
+  const list = Array.isArray(store[jobId]) ? store[jobId] : [];
+  const idx = list.findIndex(e => e.id === estimate.id);
+  if (idx !== -1) list[idx] = estimate;
+  store[jobId] = list;
+  writeJobEstimatesStore(store);
+}
+
+function deleteEstimateFromJob(jobId, estimateId) {
+  const store = readJobEstimatesStore();
+  const list = Array.isArray(store[jobId]) ? store[jobId] : [];
+  store[jobId] = list.filter(e => e.id !== estimateId);
+  writeJobEstimatesStore(store);
+}
+
+/* ------------------------ Materials deduction on Completed --------------------
+   The moment a job's status becomes Completed — from the pills on the job
+   page or a Boards drag, both of which funnel through setJobStatus() below
+   — each of that job's Materials Used quantities comes off the matching
+   inventory item's quantity on hand, exactly once ever per job. The
+   "already deducted" flag reuses the same isChecked()/setChecked() every
+   other simple per-job flag in this app uses, so toggling status away from
+   and back to Completed can't deduct a second time. */
+const JOB_MATERIALS_DEDUCTED_STORAGE_KEY = "foreman-job-materials-deducted";
+
+function deductMaterialsForJob(jobId) {
+  if (isChecked(JOB_MATERIALS_DEDUCTED_STORAGE_KEY, jobId)) return;
+  getMaterialsForJob(jobId).forEach(m => adjustInventoryQuantity(m.inventory_id, -m.quantity));
+  setChecked(JOB_MATERIALS_DEDUCTED_STORAGE_KEY, jobId, true);
 }

@@ -2,7 +2,7 @@
 
 ## Data model
 - Contact: full_name, phone, email, address, preferred_contact, source
-- Job: contact_id, service_type, job_type (Repair, New Install, Warranty), urgency, status (New Lead → Qualified → Scheduled → Quoted → Completed), assigned_to (field technician), sales_rep, quote_amount, intake_notes
+- Job: contact_id, service_type, job_type (Repair, New Install, Warranty), appointment_type (Initial Appointment, Appointment), urgency, status (New Lead → Qualified → Scheduled → Estimating → Proposal Sent → Proposal Signed → Completed), assigned_to (field technician), sales_rep, quote_amount, intake_notes
 - Appointment: job_id, start_time, end_time, assigned_tech, status
 - Call: job_id, timestamp, duration, transcript, summary, outcome
 - FollowUp: job_id, channel (SMS/email), status (drafted/approved/sent), content, sent_at

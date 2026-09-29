@@ -14,11 +14,17 @@
     "Nia Brackett": "#AF5636"
   };
 
+  // Scheduled -> Completed deepens through the same pine ramp as before,
+  // just with two more evenly-spaced stops for Proposal Sent/Signed between
+  // Estimating (was "Quoted") and Completed — same progression, not a new
+  // palette.
   var STATUS_DEFAULTS = {
     "New Lead": "#6E695C",
     "Qualified": "#C9A227",
     "Scheduled": "#1F5C4C",
-    "Quoted": "#163F35",
+    "Estimating": "#1B5042",
+    "Proposal Sent": "#174337",
+    "Proposal Signed": "#12372D",
     "Completed": "#0E2A22"
   };
 
@@ -27,7 +33,9 @@
     "New Lead": "lead",
     "Qualified": "qualified",
     "Scheduled": "scheduled",
-    "Quoted": "quoted",
+    "Estimating": "estimating",
+    "Proposal Sent": "proposal-sent",
+    "Proposal Signed": "proposal-signed",
     "Completed": "completed"
   };
 

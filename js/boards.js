@@ -12,13 +12,14 @@
 const boardState = { repFilter: "all" };
 
 document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("board-rep-filter-group").hidden = !getFeatures().salesRepTracking;
   populateRepFilter();
   renderBoard();
 });
 
 function populateRepFilter() {
   const select = document.getElementById("board-rep-filter");
-  select.innerHTML = `<option value="all">All reps</option>` +
+  select.innerHTML = `<option value="all">All Reps</option>` +
     SALES_REPS.map(rep => `<option value="${escapeHtml(rep)}">${escapeHtml(rep)}</option>`).join("");
   select.value = boardState.repFilter;
   select.addEventListener("change", () => {
@@ -31,7 +32,6 @@ function renderBoard() {
   const container = document.getElementById("board-columns");
   container.innerHTML = STATUS_PIPELINE.map(renderColumn).join("");
   wireDragAndDrop();
-  wirePickers(container, renderBoard);
 }
 
 function jobsForColumn(status) {
@@ -56,6 +56,10 @@ function renderColumn(status) {
   `;
 }
 
+// Job Type, Appointment Type, Urgency and Sales Rep are all display-only
+// tags here — plain badges, not the click-to-open-dropdown picker those
+// same four fields use on the job detail page (contact.html). Boards is a
+// read-only view of them; editing lives in exactly one place.
 function renderCard(job) {
   const contact = getContact(job.contact_id);
   const slug = techSlug(job.assigned_to);
@@ -68,8 +72,10 @@ function renderCard(job) {
       </div>
       <div class="board-card-meta">${contact.full_name} · ${job.job_location}</div>
       <div class="board-card-badges">
-        ${urgencyPickerHtml(job)}
-        ${salesRepPickerHtml(job)}
+        <span class="badge ${jobTypeBadgeClass()}">${job.job_type}</span>
+        <span class="badge ${appointmentTypeBadgeClass()}">${job.appointment_type}</span>
+        <span class="badge ${urgencyBadgeClass(job.urgency)}">${job.urgency}</span>
+        ${getFeatures().salesRepTracking ? `<span class="badge ${salesRepBadgeClass(job.sales_rep)}">${job.sales_rep}</span>` : ""}
       </div>
     </div>
   `;
@@ -95,6 +101,14 @@ function wireDragAndDrop() {
     card.addEventListener("click", () => {
       if (dragged) return;
       window.location.href = `contact.html?job=${card.getAttribute("data-job-id")}`;
+    });
+
+    // Tags are display-only here (Job Type/Appointment Type/Urgency/Sales
+    // Rep are only ever editable on the job's own page) — a click on one
+    // still shouldn't fall through and navigate like the rest of the card
+    // does, so it does nothing at all rather than something unintended.
+    card.querySelectorAll(".board-card-badges .badge").forEach(badge => {
+      badge.addEventListener("click", e => e.stopPropagation());
     });
   });
 

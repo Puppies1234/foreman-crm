@@ -4,21 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — Foreman</title>
-<link rel="stylesheet" href="css/styles.css">
-<script src="js/theme.js"></script>
+<link rel="stylesheet" href="css/styles.css?v=1790451174">
+<script src="js/theme.js?v=1790451174"></script>
 </head>
 <body>
 <div class="app-shell">
   <aside class="sidebar">
-    <div class="brand"><span class="brand-mark"></span>Foreman</div>
+    <div class="brand"><span class="brand-mark" hidden></span><span class="brand-name">Foreman</span></div>
     <nav class="nav-links">
       <a class="nav-link active" href="index.html">Dashboard</a>
       <a class="nav-link" href="calendar.html">Calendar</a>
       <a class="nav-link" href="boards.html">Boards</a>
       <a class="nav-link" href="contacts.html">Contacts</a>
+      <a class="nav-link" href="inventory.html">Inventory</a>
       <a class="nav-link" href="settings.html">Settings</a>
     </nav>
-    <div class="sidebar-footer">Foreman Home Services<br>Austin, TX</div>
+    <div class="sidebar-footer"><span class="sidebar-footer-name">Foreman Home Services</span><br>Austin, TX</div>
   </aside>
 
   <main class="main">
@@ -33,7 +34,7 @@
 
     <div class="today-strip" id="today-strip">
       <div class="today-strip-text">
-        <h1>Good morning</h1>
+        <h1>Good Morning</h1>
         <div class="page-subtitle">Friday, September 18 — here's what's happening today.</div>
       </div>
       <div class="today-pill" id="today-pill"></div>
@@ -43,23 +44,25 @@
 
     <div class="stats-row" id="stats-row"></div>
 
-    <div class="card-header" style="margin-bottom:12px;">
-      <h2>Recently viewed</h2>
+    <div id="widget-recently-viewed">
+      <div class="card-header" style="margin-bottom:12px;">
+        <h2>Recently Viewed</h2>
+      </div>
+      <div class="recent-scroll" id="recent-scroll"></div>
     </div>
-    <div class="recent-scroll" id="recent-scroll"></div>
 
-    <div class="two-col">
-      <div class="card">
+    <div class="two-col" id="dashboard-two-col">
+      <div class="card" id="widget-schedule">
         <div class="card-header">
-          <h2>Today's schedule</h2>
-          <a href="calendar.html" class="card-eyebrow">Full calendar →</a>
+          <h2>Today's Schedule</h2>
+          <a href="calendar.html" class="card-eyebrow">Full Calendar →</a>
         </div>
         <div id="schedule-list"></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="widget-activity-feed">
         <div class="card-header">
-          <h2>AI activity feed</h2>
+          <h2>AI Activity Feed</h2>
         </div>
         <div id="activity-feed"></div>
       </div>
@@ -67,8 +70,10 @@
   </main>
 </div>
 
-<script src="js/data.js"></script>
-<script src="js/search.js"></script>
-<script src="js/dashboard.js"></script>
+<script src="js/data.js?v=1790451174"></script>
+<script src="js/search.js?v=1790451174"></script>
+<script src="js/brand.js?v=1790451174"></script>
+<script src="js/features.js?v=1790451174"></script>
+<script src="js/dashboard.js?v=1790451174"></script>
 </body>
 </html>

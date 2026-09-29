@@ -4,21 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Settings — Foreman</title>
-<link rel="stylesheet" href="css/styles.css">
-<script src="js/theme.js"></script>
+<link rel="stylesheet" href="css/styles.css?v=1790451174">
+<script src="js/theme.js?v=1790451174"></script>
 </head>
 <body>
 <div class="app-shell">
   <aside class="sidebar">
-    <div class="brand"><span class="brand-mark"></span>Foreman</div>
+    <div class="brand"><span class="brand-mark" hidden></span><span class="brand-name">Foreman</span></div>
     <nav class="nav-links">
       <a class="nav-link" href="index.html">Dashboard</a>
       <a class="nav-link" href="calendar.html">Calendar</a>
       <a class="nav-link" href="boards.html">Boards</a>
       <a class="nav-link" href="contacts.html">Contacts</a>
+      <a class="nav-link" href="inventory.html">Inventory</a>
       <a class="nav-link active" href="settings.html">Settings</a>
     </nav>
-    <div class="sidebar-footer">Foreman Home Services<br>Austin, TX</div>
+    <div class="sidebar-footer"><span class="sidebar-footer-name">Foreman Home Services</span><br>Austin, TX</div>
   </aside>
 
   <main class="main">
@@ -34,14 +35,17 @@
     <div class="page-header">
       <div>
         <h1>Settings</h1>
-        <div class="page-subtitle">Manage how Foreman looks and works for your team.</div>
+        <div class="page-subtitle">Manage how <span class="brand-name">Foreman</span> looks and works for your team.</div>
       </div>
     </div>
 
     <div class="settings-tabs" id="settings-tabs">
       <button type="button" class="settings-tab-btn active" data-tab="general">General</button>
       <button type="button" class="settings-tab-btn" data-tab="design">Design</button>
+      <button type="button" class="settings-tab-btn" data-tab="features">Features</button>
       <button type="button" class="settings-tab-btn" data-tab="notifications">Notifications</button>
+      <button type="button" class="settings-tab-btn" data-tab="automations">Automations</button>
+      <button type="button" class="settings-tab-btn" data-tab="estimates">Estimates</button>
     </div>
 
     <div class="settings-panel" data-panel="general">
@@ -52,8 +56,57 @@
     </div>
 
     <div class="settings-panel" data-panel="design" hidden>
-      <div class="card">
-        <div class="card-header"><h2>Accent color</h2></div>
+      <div class="accordion-section" data-accordion="branding">
+      <button type="button" class="accordion-header"><h2>Company Branding</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="brand-settings-layout">
+          <div class="brand-logo-controls">
+            <label class="btn btn-secondary brand-logo-upload-btn" for="brand-logo-input">Upload Logo</label>
+            <input type="file" accept="image/*" id="brand-logo-input" hidden>
+            <button type="button" class="btn btn-secondary" id="brand-logo-remove-btn">Remove Logo</button>
+          </div>
+
+          <div id="logo-shape-wrap" hidden>
+            <span class="info-label">Logo Shape</span>
+            <div class="logo-shape-picker" id="logo-shape-picker">
+              <button type="button" class="logo-shape-btn" data-shape="circle">
+                <span class="logo-shape-swatch shape-circle"></span>
+                <span>Circle</span>
+              </button>
+              <button type="button" class="logo-shape-btn" data-shape="square">
+                <span class="logo-shape-swatch shape-square"></span>
+                <span>Square</span>
+              </button>
+              <button type="button" class="logo-shape-btn" data-shape="rectangle">
+                <span class="logo-shape-swatch shape-rectangle"></span>
+                <span>Rectangle</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="logo-fit-wrap" hidden>
+            <span class="info-label">Fit &amp; Position</span>
+            <div class="logo-fit-frame-row">
+              <div class="logo-fit-frame" id="logo-fit-frame"></div>
+              <div class="logo-fit-hint">Drag the logo to reposition it, and use the slider to zoom.</div>
+            </div>
+            <div class="logo-fit-zoom-row">
+              <span class="info-label">Zoom</span>
+              <input type="range" id="brand-logo-zoom" min="1" max="3" step="0.05" value="1">
+            </div>
+          </div>
+
+          <div class="edit-field">
+            <span class="info-label">Company Name</span>
+            <input type="text" class="text-input" id="brand-name-input" placeholder="Foreman">
+          </div>
+        </div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="accent">
+      <button type="button" class="accordion-header"><h2>Accent Color</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
         <div class="design-layout">
           <div class="design-picker">
             <div class="hue-wheel-wrap">
@@ -69,18 +122,18 @@
 
             <div class="swatch-row" id="swatch-row">
               <button type="button" class="swatch-btn" data-hex="#1E3A5F" title="Navy"></button>
-              <button type="button" class="swatch-btn" data-hex="#2F5233" title="Forest green"></button>
+              <button type="button" class="swatch-btn" data-hex="#2F5233" title="Forest Green"></button>
               <button type="button" class="swatch-btn" data-hex="#B65C3B" title="Terracotta"></button>
-              <button type="button" class="swatch-btn" data-hex="#3E5C76" title="Slate blue"></button>
+              <button type="button" class="swatch-btn" data-hex="#3E5C76" title="Slate Blue"></button>
               <button type="button" class="swatch-btn" data-hex="#6D2436" title="Burgundy"></button>
             </div>
           </div>
 
           <div class="design-preview">
-            <div class="card-eyebrow">Live preview</div>
+            <div class="card-eyebrow">Live Preview</div>
             <div class="theme-preview" id="theme-preview">
               <div class="theme-preview-sidebar">
-                <div class="theme-preview-brand"><span></span>Foreman</div>
+                <div class="theme-preview-brand"><span id="theme-preview-mark"></span><span class="brand-name" id="theme-preview-name">Foreman</span></div>
                 <div class="theme-preview-navitem theme-preview-navitem-active">Dashboard</div>
                 <div class="theme-preview-navitem">Calendar</div>
                 <div class="theme-preview-navitem">Contacts</div>
@@ -88,37 +141,171 @@
             </div>
           </div>
         </div>
+      </div></div>
       </div>
 
-      <div class="card">
-        <div class="card-header"><h2>Calendar colors</h2></div>
-        <p class="page-subtitle" style="margin:-8px 0 16px;">Give each technician their own appointment color.</p>
+      <div class="accordion-section" data-accordion="calendar-colors">
+      <button type="button" class="accordion-header"><h2>Calendar Colors</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <p class="page-subtitle" style="margin:0 0 16px;">Give each technician their own appointment color.</p>
         <div class="color-picker-list" id="tech-color-list"></div>
+      </div></div>
       </div>
 
-      <div class="card">
-        <div class="card-header"><h2>Contact status colors</h2></div>
-        <p class="page-subtitle" style="margin:-8px 0 16px;">Customize the tag color for each job status.</p>
+      <div class="accordion-section" data-accordion="status-colors">
+      <button type="button" class="accordion-header"><h2>Contact Status Colors</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <p class="page-subtitle" style="margin:0 0 16px;">Customize the tag color for each job status.</p>
         <div class="color-picker-list" id="status-color-list"></div>
+      </div></div>
       </div>
 
-      <div class="btn-row">
+      <div class="btn-row" style="margin-top:20px;">
         <button type="button" class="btn btn-primary" id="save-all-btn">Save</button>
-        <span class="save-confirm" id="save-confirm" hidden>Saved — applied across Foreman.</span>
+        <span class="save-confirm" id="save-confirm" hidden>Saved — applied across <span class="brand-name">Foreman</span>.</span>
+      </div>
+    </div>
+
+    <div class="settings-panel" data-panel="features" hidden>
+      <div class="btn-row" style="margin-bottom:20px;">
+        <button type="button" class="btn btn-secondary" id="features-reset-btn">Reset To Defaults</button>
+        <span class="save-confirm" id="features-reset-confirm" hidden>Reset — every feature is back on.</span>
+      </div>
+
+      <div class="accordion-section" data-accordion="modules">
+      <button type="button" class="accordion-header"><h2>Modules</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="feature-list-modules"></div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="dashboard-widgets">
+      <button type="button" class="accordion-header"><h2>Dashboard Widgets</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="feature-list-dashboard-widgets"></div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="job-activity-tabs">
+      <button type="button" class="accordion-header"><h2>Job Activity Tabs</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="feature-list-job-activity-tabs"></div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="ai-assistant">
+      <button type="button" class="accordion-header"><h2>AI Assistant</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="feature-list-ai-assistant"></div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="sales-rep-tracking">
+      <button type="button" class="accordion-header"><h2>Sales Rep Tracking</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="feature-list-sales-rep-tracking"></div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="job-appointment-labels">
+      <button type="button" class="accordion-header"><h2>Job &amp; Appointment Labels</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <p class="page-subtitle" style="margin:0 0 12px;">Turning a label off only removes it from the dropdown for new choices — jobs already set to it keep showing it as before.</p>
+        <div class="feature-toggle-subhead">Appointment Type</div>
+        <div id="feature-list-appointment-type"></div>
+        <div class="feature-toggle-subhead">Job Type</div>
+        <div id="feature-list-job-type"></div>
+      </div></div>
       </div>
     </div>
 
     <div class="settings-panel" data-panel="notifications" hidden>
-      <div class="card">
-        <div class="card-header"><h2>Notifications</h2></div>
-        <p class="empty-note">More settings coming soon.</p>
+      <div class="card" style="margin-bottom:20px;">
+        <p class="page-subtitle" style="margin:0 0 12px;">These layer on top of whichever individual notification types below are enabled — actual sending isn't wired up yet, so only the toggle state itself is saved.</p>
+        <div id="notif-top-toggles"></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="notif-leads-scheduling">
+      <button type="button" class="accordion-header"><h2>Leads &amp; Scheduling</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="notif-list-leads-scheduling"></div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="notif-ai-assistant" id="notif-section-ai-assistant">
+      <button type="button" class="accordion-header"><h2>AI Assistant (Ava)</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="notif-list-ai-assistant"></div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="notif-jobs-pipeline">
+      <button type="button" class="accordion-header"><h2>Jobs &amp; Pipeline</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="notif-list-jobs-pipeline"></div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="notif-inventory" id="notif-section-inventory">
+      <button type="button" class="accordion-header"><h2>Inventory</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="notif-list-inventory"></div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="notif-payments">
+      <button type="button" class="accordion-header"><h2>Payments</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="notif-list-payments"></div>
+      </div></div>
+      </div>
+
+      <div class="btn-row" style="margin-top:20px;">
+        <button type="button" class="btn btn-primary" id="notif-save-btn">Save</button>
+        <span class="save-confirm" id="notif-save-confirm" hidden>Saved — notification preferences updated.</span>
+      </div>
+    </div>
+
+    <div class="settings-panel" data-panel="automations" hidden>
+      <div class="accordion-section" data-accordion="your-automations">
+      <button type="button" class="accordion-header"><h2>Your Automations</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="btn-row" style="margin-bottom:16px;">
+          <button type="button" class="btn btn-primary" id="automation-new-btn">+ New Automation</button>
+        </div>
+        <div id="automation-editor-wrap"></div>
+        <div id="automation-list"></div>
+      </div></div>
+      </div>
+
+      <div class="accordion-section" data-accordion="upcoming-automations">
+      <button type="button" class="accordion-header"><h2>Upcoming Automations</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <p class="page-subtitle" style="margin:0 0 12px;">Preview only — sending isn't connected yet.</p>
+        <div id="automation-upcoming-list"></div>
+      </div></div>
+      </div>
+    </div>
+
+    <div class="settings-panel" data-panel="estimates" hidden>
+      <div class="accordion-section" data-accordion="estimate-templates">
+      <button type="button" class="accordion-header"><h2>Estimate Templates</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="btn-row" style="margin-bottom:16px;">
+          <button type="button" class="btn btn-primary" id="estimate-template-new-btn">+ New Template</button>
+        </div>
+        <div id="estimate-template-editor-wrap"></div>
+        <div id="estimate-template-list"></div>
+      </div></div>
       </div>
     </div>
   </main>
 </div>
 
-<script src="js/data.js"></script>
-<script src="js/search.js"></script>
-<script src="js/settings.js"></script>
+<script src="js/data.js?v=1790451174"></script>
+<script src="js/search.js?v=1790451174"></script>
+<script src="js/brand.js?v=1790451174"></script>
+<script src="js/features.js?v=1790451174"></script>
+<script src="js/settings.js?v=1790451174"></script>
 </body>
 </html>

@@ -11,9 +11,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const job = jobId ? getJob(jobId) : null;
 
   if (job) {
+    recordRecentlyViewed("job", job.id);
     renderJobView(job);
   } else {
     const contact = (contactParam && getContact(contactParam)) || CONTACTS[0];
+    recordRecentlyViewed("contact", contact.id);
     renderProfileView(contact);
   }
 });
@@ -29,7 +31,7 @@ function renderProfileView(contact) {
 
   const jobs = [...getJobsForContact(contact.id)].sort((a, b) => b.date.localeCompare(a.date));
 
-  document.title = `${contact.full_name} — Foreman`;
+  document.title = `${contact.full_name} — ${getBrand().name}`;
   document.getElementById("profile-name").textContent = contact.full_name;
   document.getElementById("profile-subtitle").textContent =
     `${contact.address} · ${jobs.length} job${jobs.length === 1 ? "" : "s"} on file`;
@@ -58,6 +60,8 @@ function renderJobsIndex(jobs) {
         <div class="schedule-title">Job #${job.job_number} — ${job.service_type}</div>
         <div class="schedule-meta">${formatDateOnly(job.date)}</div>
       </div>
+      <span class="badge ${jobTypeBadgeClass()}">${job.job_type}</span>
+      <span class="badge ${appointmentTypeBadgeClass()}">${job.appointment_type}</span>
       <span class="badge ${statusBadgeClass(job.status)}">${job.status}</span>
       ${chevronIcon()}
     </a>
@@ -73,30 +77,133 @@ function renderJobView(job) {
   const contact = getContact(job.contact_id);
   const siblingJobs = getJobsForContact(contact.id);
 
-  document.title = `${job.service_type} · ${contact.full_name} — Foreman`;
+  document.title = `${job.service_type} · ${contact.full_name} — ${getBrand().name}`;
 
   const breadcrumb = document.getElementById("job-breadcrumb");
   breadcrumb.href = `contact.html?contact=${contact.id}`;
   breadcrumb.textContent = `← ${contact.full_name} · ${siblingJobs.length} job${siblingJobs.length === 1 ? "" : "s"}`;
 
   document.getElementById("job-title").textContent = job.service_type;
-  document.getElementById("job-subtitle").textContent =
-    `Job #${job.job_number} · ${job.job_type} · ${formatDateOnly(job.date)}`;
+  updateJobSubtitle(job);
 
   renderContactCard(contact, "job-contact-body");
   renderJobInfoCard(job);
+  // Its own render call, independent of renderJobInfoCard's Edit/Save/
+  // Cancel toggle — Materials Used stays live (adds/removes save
+  // immediately) no matter what state the rest of the Job card is in.
+  renderMaterialsUsed(job);
   renderJobTabs(job);
+}
+
+// One listener for the whole page, registered once (not per render) —
+// closes any open materials search dropdown on an outside click, same
+// idea as data.js's closeAllPickerMenus for the badge pickers.
+document.addEventListener("click", e => {
+  if (!e.target.closest(".materials-search-wrap")) {
+    document.querySelectorAll(".materials-search-results").forEach(el => { el.hidden = true; });
+  }
+});
+
+function renderMaterialsUsed(job) {
+  const el = document.getElementById("materials-used");
+  const materials = getMaterialsForJob(job.id);
+  const total = materials.reduce((sum, m) => {
+    const item = getInventoryItem(m.inventory_id);
+    return sum + (item ? item.unit_price * m.quantity : 0);
+  }, 0);
+
+  el.innerHTML = `
+    <div class="materials-search-row">
+      <div class="materials-search-wrap">
+        <input type="text" class="text-input" id="materials-search-input" placeholder="Search inventory by name…" autocomplete="off">
+        <div class="materials-search-results" id="materials-search-results" hidden></div>
+      </div>
+      <input type="number" class="text-input materials-qty-input" id="materials-add-qty" value="1" min="1" step="1">
+      <button type="button" class="btn btn-secondary" id="materials-add-btn" disabled>Add</button>
+    </div>
+    ${materials.length > 0 ? `
+      <div class="materials-list">
+        ${materials.map(m => {
+          const item = getInventoryItem(m.inventory_id);
+          const lineCost = item ? item.unit_price * m.quantity : 0;
+          return `
+            <div class="materials-row">
+              <div class="materials-row-name">${item ? escapeHtml(item.name) : "(item no longer in inventory)"}</div>
+              <div class="materials-row-qty">×${m.quantity}</div>
+              <div class="materials-row-cost">${formatMoney(lineCost)}</div>
+              <button type="button" class="materials-remove" data-inv-id="${m.inventory_id}" aria-label="Remove">&times;</button>
+            </div>
+          `;
+        }).join("")}
+      </div>
+      <div class="materials-total"><span>Total</span><span>${formatMoney(total)}</span></div>
+    ` : `<div class="empty-note">No materials added yet.</div>`}
+  `;
+
+  let selectedItemId = null;
+  const searchInput = document.getElementById("materials-search-input");
+  const resultsEl = document.getElementById("materials-search-results");
+  const addBtn = document.getElementById("materials-add-btn");
+
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.trim().toLowerCase();
+    selectedItemId = null;
+    addBtn.disabled = true;
+    if (!q) {
+      resultsEl.hidden = true;
+      return;
+    }
+    const matches = INVENTORY.filter(i => i.name.toLowerCase().includes(q)).slice(0, 8);
+    resultsEl.innerHTML = matches.length > 0
+      ? matches.map(i => `<div class="materials-search-result" data-id="${i.id}">${escapeHtml(i.name)} <span class="materials-search-result-qty">(${i.quantity} on hand)</span></div>`).join("")
+      : `<div class="materials-search-empty">No matching items</div>`;
+    resultsEl.hidden = false;
+  });
+
+  resultsEl.addEventListener("click", e => {
+    const row = e.target.closest(".materials-search-result");
+    if (!row) return;
+    selectedItemId = row.getAttribute("data-id");
+    searchInput.value = getInventoryItem(selectedItemId).name;
+    resultsEl.hidden = true;
+    addBtn.disabled = false;
+  });
+
+  addBtn.addEventListener("click", () => {
+    if (!selectedItemId) return;
+    const qty = Math.max(1, parseInt(document.getElementById("materials-add-qty").value, 10) || 1);
+    addMaterialToJob(job.id, selectedItemId, qty);
+    renderMaterialsUsed(job);
+  });
+
+  el.querySelectorAll(".materials-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      removeMaterialFromJob(job.id, btn.getAttribute("data-inv-id"));
+      renderMaterialsUsed(job);
+    });
+  });
 }
 
 // Draft state for the Job card's Edit/Save/Cancel flow — mirrors
 // contactEditDraft above (own variable, since a job and a contact card can
 // both be on screen at once and edit independently). null outside of edit
 // mode; discarded (not saved) on Cancel. Status/Urgency/Sales rep/Assigned
-// to are NOT part of this — they keep their own always-on pickers/pipeline,
-// untouched by Edit mode.
+// to/Job Type/Appointment Type are NOT part of this — they keep their own
+// always-on pickers/pipeline, untouched by Edit mode.
 let jobEditDraft = null;
 
+// Job Type shows up in one place outside the Job card itself — this
+// breadcrumb-area subtitle — so its picker's re-render (renderJobInfoCard,
+// not the full renderJobView) needs to keep this in sync too, or picking a
+// new value here would save instantly everywhere else while this one line
+// silently went stale.
+function updateJobSubtitle(job) {
+  document.getElementById("job-subtitle").textContent =
+    `Job #${job.job_number} · ${job.job_type} · ${formatDateOnly(job.date)}`;
+}
+
 function renderJobInfoCard(job) {
+  updateJobSubtitle(job);
   const pipelineEl = document.getElementById("pipeline");
   const currentIndex = STATUS_PIPELINE.indexOf(job.status);
   pipelineEl.innerHTML = STATUS_PIPELINE.map((step, i) => {
@@ -121,13 +228,14 @@ function renderJobInfoCard(job) {
   }
 
   const rows = [
-    ["Job Type", job.job_type],
+    ["Job Type", jobTypePickerHtml(job)],
+    ["Appointment Type", appointmentTypePickerHtml(job)],
     ["Location", escapeHtml(job.job_location)],
     ["Urgency", urgencyPickerHtml(job)],
-    ["Sales rep", salesRepPickerHtml(job)],
-    ["Assigned to", assignedToPickerHtml(job)],
-    ["Quote amount", formatMoney(job.quote_amount)],
-  ];
+    getFeatures().salesRepTracking && ["Sales Rep", salesRepPickerHtml(job)],
+    ["Assigned To", assignedToPickerHtml(job)],
+    ["Quote Amount", formatMoney(job.quote_amount)],
+  ].filter(Boolean);
   const jobCardBody = document.getElementById("job-card-body");
   jobCardBody.innerHTML = rows.map(([label, value]) => `
     <div class="info-row">
@@ -140,7 +248,6 @@ function renderJobInfoCard(job) {
   document.getElementById("job-edit-btn").addEventListener("click", () => {
     const appt = getAppointmentForJob(job.id);
     jobEditDraft = {
-      job_type: job.job_type,
       job_location: job.job_location,
       quote_amount: job.quote_amount,
       intake_notes: job.intake_notes,
@@ -172,17 +279,11 @@ function renderJobInfoCardEditor(job) {
   const jobCardBody = document.getElementById("job-card-body");
   jobCardBody.innerHTML = `
     <div class="edit-field">
-      <span class="info-label">Job Type</span>
-      <select class="select-input" id="edit-job-type">
-        ${JOB_TYPES.map(t => `<option value="${t}" ${t === draft.job_type ? "selected" : ""}>${t}</option>`).join("")}
-      </select>
-    </div>
-    <div class="edit-field">
       <span class="info-label">Location</span>
       <input type="text" class="text-input" id="edit-job-location" value="${escapeHtml(draft.job_location)}">
     </div>
     <div class="edit-field">
-      <span class="info-label">Quote amount</span>
+      <span class="info-label">Quote Amount</span>
       <input type="number" class="text-input" id="edit-quote-amount" min="0" step="1" placeholder="No quote yet" value="${draft.quote_amount != null ? draft.quote_amount : ""}">
     </div>
   `;
@@ -196,11 +297,11 @@ function renderJobInfoCardEditor(job) {
       <input type="date" class="text-input" id="edit-appt-date" value="${draft.appt_date}">
     </div>
     <div class="edit-field">
-      <span class="info-label">Start time</span>
+      <span class="info-label">Start Time</span>
       <input type="time" class="text-input" id="edit-appt-start" value="${draft.appt_start}">
     </div>
     <div class="edit-field">
-      <span class="info-label">End time</span>
+      <span class="info-label">End Time</span>
       <input type="time" class="text-input" id="edit-appt-end" value="${draft.appt_end}">
     </div>
     <div class="btn-row">
@@ -213,7 +314,6 @@ function renderJobInfoCardEditor(job) {
     const quoteRaw = document.getElementById("edit-quote-amount").value.trim();
 
     setJobDetails(job.id, {
-      job_type: document.getElementById("edit-job-type").value,
       job_location: document.getElementById("edit-job-location").value.trim(),
       quote_amount: quoteRaw === "" ? null : Number(quoteRaw),
       intake_notes: document.getElementById("edit-intake-notes").value.trim(),
@@ -239,16 +339,30 @@ function renderJobInfoCardEditor(job) {
 }
 
 /* ------------------------------ Job tabs ---------------------------------
-   All four panels are rendered fresh for the single `job` passed in, from
+   All five panels are rendered fresh for the single `job` passed in, from
    its own id only — switching jobs re-runs this from scratch, so nothing
    from a previously viewed job can linger. */
 
 function renderJobTabs(job) {
   const tabButtons = document.querySelectorAll("#job-tabs .tab-btn");
   const panels = document.querySelectorAll(".job-tab-panel");
+  const enabled = getFeatures().jobActivityTabs;
+
+  // A tab this business has turned off is hidden outright (button and
+  // panel), not just unreachable — the active tab defaults to the first
+  // one still enabled instead of always "messages", in case that's the
+  // one that's off.
+  tabButtons.forEach(btn => {
+    btn.hidden = !enabled[btn.getAttribute("data-tab")];
+  });
+  panels.forEach(p => {
+    p.hidden = true;
+  });
+  const firstEnabledBtn = Array.from(tabButtons).find(btn => !btn.hidden);
+  const defaultTab = firstEnabledBtn ? firstEnabledBtn.getAttribute("data-tab") : null;
 
   tabButtons.forEach(btn => {
-    btn.classList.toggle("active", btn.getAttribute("data-tab") === "messages");
+    btn.classList.toggle("active", btn.getAttribute("data-tab") === defaultTab);
     btn.onclick = () => {
       tabButtons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
@@ -256,19 +370,27 @@ function renderJobTabs(job) {
       panels.forEach(p => { p.hidden = p.getAttribute("data-panel") !== target; });
     };
   });
-  panels.forEach(p => { p.hidden = p.getAttribute("data-panel") !== "messages"; });
+  panels.forEach(p => { p.hidden = p.getAttribute("data-panel") !== defaultTab; });
 
   renderMessagesPanel(job);
   renderCallsPanel(job);
   renderDocumentsPanel(job);
   renderPhotosPanel(job);
+  renderEstimatePanel(job);
 }
 
 // Merges this job's actual SMS thread with its drafted/approved/sent
-// follow-up (if any) into one chronological conversation.
+// follow-up (if any) into one chronological conversation. Settings →
+// Features → AI Assistant (Ava) off means Ava isn't drafting or sending on
+// this business's behalf, so its composed messages and follow-up drafts
+// drop out of the thread — the contact's own incoming texts still show.
 function renderMessagesPanel(job) {
-  const thread = getThreadForJob(job.id);
+  let thread = getThreadForJob(job.id);
   const el = document.getElementById("panel-messages");
+
+  if (!getFeatures().aiAssistant) {
+    thread = thread.filter(item => item.kind === "message" && item.sender !== "ai");
+  }
 
   if (thread.length === 0) {
     el.innerHTML = `<div class="empty-note">No messages yet for this job.</div>`;
@@ -282,7 +404,7 @@ function renderMessagesPanel(job) {
           const isAi = item.sender === "ai";
           return `
             <div class="transcript-line ${isAi ? "ai" : ""}">
-              <div class="transcript-speaker">${isAi ? "Foreman" : "Contact"}</div>
+              <div class="transcript-speaker">${isAi ? escapeHtml(getBrand().name) : "Contact"}</div>
               <div class="transcript-bubble">
                 ${item.text}
                 <div class="activity-time" style="margin-top:6px;">${formatDateTime(item.timestamp)}</div>
@@ -294,7 +416,7 @@ function renderMessagesPanel(job) {
         const statusClass = { drafted: "badge-qualified", approved: "badge-scheduled", sent: "badge-completed" }[item.status];
         return `
           <div class="transcript-line ai">
-            <div class="transcript-speaker">Foreman</div>
+            <div class="transcript-speaker">${escapeHtml(getBrand().name)}</div>
             <div class="transcript-bubble">
               <div style="margin-bottom:8px;"><span class="badge ${statusClass}">${statusLabel} · ${item.channel}</span></div>
               ${item.content}
@@ -345,48 +467,443 @@ function renderCallsPanel(job) {
   `;
 }
 
-function renderDocumentsPanel(job) {
-  const docs = getDocumentsForJob(job.id);
-  const el = document.getElementById("panel-documents");
-  if (docs.length === 0) {
-    el.innerHTML = `<div class="empty-note">No documents uploaded for this job.</div>`;
+// Reads a File, gated by the same 5MB cap (js/data.js's MAX_UPLOAD_BYTES)
+// no matter which tab called it — shows an inline error and never even
+// attempts to read a file that's too large, rather than letting
+// FileReader/localStorage fail later with a much less useful error.
+function readUploadedFile(file, errorEl, onDone) {
+  errorEl.hidden = true;
+  if (file.size > MAX_UPLOAD_BYTES) {
+    errorEl.textContent = `"${file.name}" is ${formatFileSize(file.size)} — the limit is ${formatFileSize(MAX_UPLOAD_BYTES)}. Choose a smaller file.`;
+    errorEl.hidden = false;
     return;
   }
+  const reader = new FileReader();
+  reader.onload = () => onDone(reader.result);
+  reader.onerror = () => {
+    errorEl.textContent = `Couldn't read "${file.name}". Try again.`;
+    errorEl.hidden = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+const DOC_ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx"];
+
+function isAllowedDocumentFile(file) {
+  if (file.type.startsWith("image/")) return true;
+  const lower = file.name.toLowerCase();
+  return DOC_ALLOWED_EXTENSIONS.some(ext => lower.endsWith(ext));
+}
+
+function renderDocumentsPanel(job) {
+  const docs = [...getDocumentsForJob(job.id), ...getUploadedDocumentsForJob(job.id)]
+    .sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at));
+  const el = document.getElementById("panel-documents");
+
   el.innerHTML = `
-    <div class="doc-list">
-      ${docs.map(doc => `
-        <div class="doc-row">
-          <span class="doc-icon">${DOC_ICON}</span>
-          <div class="doc-body">
-            <div class="doc-name">${doc.name}</div>
-            <div class="doc-meta">${doc.size} · Uploaded ${formatDateTime(doc.uploaded_at)}</div>
-          </div>
-        </div>
-      `).join("")}
+    <div class="upload-toolbar-row">
+      <label class="btn btn-secondary" for="doc-upload-input">Upload Document</label>
+      <input type="file" id="doc-upload-input" accept=".pdf,.doc,.docx,image/*" hidden>
+    </div>
+    <div class="upload-error" id="doc-upload-error" hidden></div>
+    ${docs.length === 0 ? `<div class="empty-note">No documents uploaded for this job.</div>` : `
+      <div class="doc-list">
+        ${docs.map(doc => {
+          const isUploaded = !!doc.dataUrl;
+          const nameHtml = isUploaded
+            ? `<a href="${doc.dataUrl}" target="_blank" rel="noopener" download="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</a>`
+            : escapeHtml(doc.name);
+          return `
+            <div class="doc-row">
+              <span class="doc-icon">${DOC_ICON}</span>
+              <div class="doc-body">
+                <div class="doc-name">${nameHtml}</div>
+                <div class="doc-meta">${doc.size} · Uploaded ${formatDateTime(doc.uploaded_at)}</div>
+              </div>
+              ${isUploaded ? `<button type="button" class="materials-remove" data-doc-id="${doc.id}" aria-label="Remove document">&times;</button>` : ""}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `}
+  `;
+
+  const errorEl = document.getElementById("doc-upload-error");
+  document.getElementById("doc-upload-input").addEventListener("change", e => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!isAllowedDocumentFile(file)) {
+      errorEl.textContent = `"${file.name}" isn't a supported type — upload a PDF, DOC/DOCX, or image.`;
+      errorEl.hidden = false;
+      return;
+    }
+    readUploadedFile(file, errorEl, dataUrl => {
+      const ok = addUploadedDocumentToJob(job.id, {
+        id: `doc-upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name: file.name,
+        size: formatFileSize(file.size),
+        dataUrl,
+        uploaded_at: new Date().toISOString(),
+      });
+      if (!ok) {
+        errorEl.textContent = "Couldn't save that file — storage is full. Try removing an existing upload first.";
+        errorEl.hidden = false;
+        return;
+      }
+      renderDocumentsPanel(job);
+    });
+  });
+
+  el.querySelectorAll(".doc-list .materials-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      removeUploadedDocumentFromJob(job.id, btn.getAttribute("data-doc-id"));
+      renderDocumentsPanel(job);
+    });
+  });
+}
+
+function renderPhotosPanel(job) {
+  const photos = [...getPhotosForJob(job.id), ...getUploadedPhotosForJob(job.id)]
+    .sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at));
+  const el = document.getElementById("panel-photos");
+
+  el.innerHTML = `
+    <div class="upload-toolbar-row">
+      <input type="text" class="text-input" id="photo-caption-input" placeholder="Caption (optional)">
+      <label class="btn btn-secondary" for="photo-upload-input">Upload Photo</label>
+      <input type="file" id="photo-upload-input" accept="image/*" hidden>
+    </div>
+    <div class="upload-error" id="photo-upload-error" hidden></div>
+    ${photos.length === 0 ? `<div class="empty-note">No photos uploaded for this job.</div>` : `
+      <div class="photo-grid">
+        ${photos.map(photo => {
+          const isUploaded = !!photo.dataUrl;
+          return `
+            <div class="photo-tile">
+              ${isUploaded
+                ? `<button type="button" class="photo-tile-img-btn" data-photo-id="${photo.id}"><img class="photo-tile-img" src="${photo.dataUrl}" alt="${escapeHtml(photo.caption || "")}"></button>`
+                : `<div class="photo-tile-placeholder">${PHOTO_ICON}</div>`}
+              <div class="photo-tile-caption">
+                <div class="doc-name">${escapeHtml(photo.caption || "Untitled")}</div>
+                <div class="doc-meta">${formatDateTime(photo.uploaded_at)}</div>
+              </div>
+              ${isUploaded ? `<button type="button" class="materials-remove photo-remove-btn" data-photo-id="${photo.id}" aria-label="Remove photo">&times;</button>` : ""}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `}
+  `;
+
+  const errorEl = document.getElementById("photo-upload-error");
+  document.getElementById("photo-upload-input").addEventListener("change", e => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      errorEl.textContent = `"${file.name}" isn't an image.`;
+      errorEl.hidden = false;
+      return;
+    }
+    const caption = document.getElementById("photo-caption-input").value.trim();
+    readUploadedFile(file, errorEl, dataUrl => {
+      const ok = addUploadedPhotoToJob(job.id, {
+        id: `photo-upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        caption,
+        dataUrl,
+        uploaded_at: new Date().toISOString(),
+      });
+      if (!ok) {
+        errorEl.textContent = "Couldn't save that photo — storage is full. Try removing an existing upload first.";
+        errorEl.hidden = false;
+        return;
+      }
+      renderPhotosPanel(job);
+    });
+  });
+
+  el.querySelectorAll(".photo-tile-img-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const photo = photos.find(p => p.id === btn.getAttribute("data-photo-id"));
+      openPhotoLightbox(photo);
+    });
+  });
+
+  el.querySelectorAll(".photo-remove-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      removeUploadedPhotoFromJob(job.id, btn.getAttribute("data-photo-id"));
+      renderPhotosPanel(job);
+    });
+  });
+}
+
+// One lightbox element, created once and reused for every tile on every
+// job page — closes on clicking the backdrop or the × control.
+function openPhotoLightbox(photo) {
+  let overlay = document.getElementById("photo-lightbox");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "photo-lightbox";
+    overlay.className = "photo-lightbox";
+    overlay.innerHTML = `
+      <button type="button" class="photo-lightbox-close" aria-label="Close">&times;</button>
+      <img class="photo-lightbox-img">
+      <div class="photo-lightbox-caption"></div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", e => {
+      if (e.target === overlay || e.target.classList.contains("photo-lightbox-close")) {
+        overlay.hidden = true;
+      }
+    });
+  }
+  overlay.querySelector(".photo-lightbox-img").src = photo.dataUrl;
+  overlay.querySelector(".photo-lightbox-caption").textContent = photo.caption || "";
+  overlay.hidden = false;
+}
+
+function estimateLineItemRowHtml(li) {
+  return `
+    <div class="estimate-line-item-row" data-line-id="${li.id}">
+      <input type="text" class="text-input" data-field="name" placeholder="Item Name" value="${escapeHtml(li.name)}">
+      <input type="text" class="text-input" data-field="description" placeholder="Description" value="${escapeHtml(li.description)}">
+      <input type="number" class="text-input" data-field="quantity" min="0" step="1" value="${li.quantity}">
+      <input type="number" class="text-input" data-field="price" min="0" step="0.01" value="${li.price}">
+      <button type="button" class="materials-remove estimate-remove-line-btn" data-line-id="${li.id}" aria-label="Remove line item">&times;</button>
     </div>
   `;
 }
 
-function renderPhotosPanel(job) {
-  const photos = getPhotosForJob(job.id);
-  const el = document.getElementById("panel-photos");
-  if (photos.length === 0) {
-    el.innerHTML = `<div class="empty-note">No photos uploaded for this job.</div>`;
-    return;
-  }
-  el.innerHTML = `
-    <div class="photo-grid">
-      ${photos.map(photo => `
-        <div class="photo-tile">
-          <div class="photo-tile-placeholder">${PHOTO_ICON}</div>
-          <div class="photo-tile-caption">
-            <div class="doc-name">${photo.caption}</div>
-            <div class="doc-meta">${formatDateTime(photo.uploaded_at)}</div>
-          </div>
-        </div>
-      `).join("")}
+// Three mutually exclusive things the Estimate tab can be showing right
+// now. A real page navigation between jobs reinitializes this module from
+// scratch, so none of this is ever stale across jobs.
+//   selectedEstimateId — id of an already-SAVED estimate open for editing
+//   draftEstimate      — a brand-new estimate, populated from a template or
+//                        blank, not yet added to the job's saved list —
+//                        that only happens when Save Estimate is clicked
+let selectedEstimateId = null;
+let draftEstimate = null;
+let estimateChooserOpen = false;
+
+function estimateTemplateChooserHtml(templates, showCancel) {
+  const promptText = templates.length > 0
+    ? "Choose a template to get started, or start blank."
+    : "No templates yet — create one in Settings → Estimates, or start blank.";
+  return `
+    <div class="estimate-start-prompt">${promptText}</div>
+    <div class="estimate-start-row">
+      <select class="select-input" id="estimate-template-select">
+        <option value="">Blank estimate</option>
+        ${templates.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("")}
+      </select>
+      <button type="button" class="btn btn-primary" id="estimate-start-btn">Start Estimate</button>
+      ${showCancel ? `<button type="button" class="btn btn-secondary" id="estimate-chooser-cancel-btn">Cancel</button>` : ""}
     </div>
   `;
+}
+
+// List view: every SAVED estimate this job has, plus the template-or-blank
+// chooser — shown directly when there are zero estimates yet, or on demand
+// via "+ New Estimate" once there's at least one.
+function renderEstimateList(job) {
+  const el = document.getElementById("panel-estimate");
+  const estimates = getEstimatesForJob(job.id);
+  const templates = getEstimateTemplates();
+  const showChooser = estimates.length === 0 || estimateChooserOpen;
+
+  const listHtml = estimates.length > 0 ? `
+    <div class="doc-list" style="margin-bottom:16px;">
+      ${estimates.map(e => `
+        <a class="doc-row estimate-list-row" href="#" data-estimate-id="${e.id}">
+          <div class="doc-body">
+            <div class="doc-name">${escapeHtml(e.name)}</div>
+            <div class="doc-meta">${e.lineItems.length} item${e.lineItems.length === 1 ? "" : "s"} · ${formatMoney(estimateLineItemsTotal(e.lineItems))}</div>
+          </div>
+          <button type="button" class="materials-remove estimate-delete-btn" data-estimate-id="${e.id}" aria-label="Delete estimate">&times;</button>
+        </a>
+      `).join("")}
+    </div>
+  ` : "";
+
+  const chooserHtml = showChooser ? estimateTemplateChooserHtml(templates, estimates.length > 0) : "";
+  const newBtnHtml = (estimates.length > 0 && !showChooser)
+    ? `<button type="button" class="btn btn-secondary" id="estimate-new-btn">+ New Estimate</button>`
+    : "";
+  const emptyNoteHtml = (estimates.length === 0 && !showChooser)
+    ? `<div class="empty-note">No estimate started for this job yet.</div>`
+    : "";
+
+  el.innerHTML = listHtml + chooserHtml + newBtnHtml + emptyNoteHtml;
+
+  el.querySelectorAll(".estimate-list-row").forEach(row => {
+    row.addEventListener("click", e => {
+      e.preventDefault();
+      if (e.target.closest(".estimate-delete-btn")) return;
+      selectedEstimateId = row.getAttribute("data-estimate-id");
+      renderEstimatePanel(job);
+    });
+  });
+
+  el.querySelectorAll(".estimate-delete-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!confirm("Delete this estimate? This can't be undone.")) return;
+      deleteEstimateFromJob(job.id, btn.getAttribute("data-estimate-id"));
+      renderEstimatePanel(job);
+    });
+  });
+
+  if (showChooser) {
+    // Matched by id, not name — the dropdown's own option values are each
+    // template's real id (set where the <option> tags are built above), so
+    // this is exactly the same id the templates array itself is keyed by.
+    document.getElementById("estimate-start-btn").addEventListener("click", () => {
+      const templateId = document.getElementById("estimate-template-select").value || null;
+      estimateChooserOpen = false;
+      draftEstimate = {
+        id: null,
+        name: "",
+        lineItems: estimateLineItemsFromTemplate(templateId),
+        started_from_template_id: templateId,
+      };
+      renderEstimatePanel(job);
+    });
+    const cancelBtn = document.getElementById("estimate-chooser-cancel-btn");
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => {
+        estimateChooserOpen = false;
+        renderEstimatePanel(job);
+      });
+    }
+  }
+
+  if (newBtnHtml) {
+    document.getElementById("estimate-new-btn").addEventListener("click", () => {
+      estimateChooserOpen = true;
+      renderEstimatePanel(job);
+    });
+  }
+}
+
+// Editor view — shared by a brand-new (unsaved) draft and an existing
+// saved estimate being reopened. Line item and name edits only touch the
+// in-memory object until Save Estimate is clicked: that button is the one
+// and only thing that ever writes this estimate to storage, so it's a
+// real, meaningful save rather than a no-op next to auto-saving fields.
+// isNew controls whether Save creates a new entry (and Cancel discards the
+// draft outright) or updates an existing one (and the back arrow just
+// closes the editor, nothing to discard).
+function renderEstimateEditor(job, estimate, isNew) {
+  const el = document.getElementById("panel-estimate");
+
+  el.innerHTML = `
+    <button type="button" class="card-eyebrow estimate-back-btn" id="estimate-back-btn">&larr; All Estimates</button>
+    <div class="edit-field" style="margin-top:10px;">
+      <span class="info-label">Estimate Name</span>
+      <input type="text" class="text-input" id="job-estimate-name-input" placeholder="Optional — auto-named when saved" value="${escapeHtml(estimate.name)}">
+    </div>
+    <div class="estimate-line-items-header">
+      <span>Item Name</span><span>Description</span><span>Qty</span><span>Price</span><span></span>
+    </div>
+    <div class="estimate-line-items-list" id="job-estimate-line-items">
+      ${estimate.lineItems.map(estimateLineItemRowHtml).join("")}
+    </div>
+    <button type="button" class="btn btn-secondary" id="job-estimate-add-line-btn">+ Add Line Item</button>
+    <div class="estimate-total-row"><span>Estimate Total</span><span id="job-estimate-total">${formatMoney(estimateLineItemsTotal(estimate.lineItems))}</span></div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button type="button" class="btn btn-primary" id="job-estimate-save-btn">Save Estimate</button>
+      ${isNew ? `<button type="button" class="btn btn-secondary" id="job-estimate-discard-btn">Cancel</button>` : ""}
+      <span class="save-confirm" id="job-estimate-save-confirm" hidden>Saved.</span>
+    </div>
+  `;
+
+  document.getElementById("estimate-back-btn").addEventListener("click", () => {
+    selectedEstimateId = null;
+    draftEstimate = null;
+    renderEstimatePanel(job);
+  });
+
+  const discardBtn = document.getElementById("job-estimate-discard-btn");
+  if (discardBtn) {
+    discardBtn.addEventListener("click", () => {
+      draftEstimate = null;
+      renderEstimatePanel(job);
+    });
+  }
+
+  document.getElementById("job-estimate-name-input").addEventListener("input", e => {
+    estimate.name = e.target.value;
+    document.getElementById("job-estimate-save-confirm").hidden = true;
+  });
+
+  const totalEl = document.getElementById("job-estimate-total");
+  const saveConfirmEl = document.getElementById("job-estimate-save-confirm");
+  const updateTotal = () => {
+    totalEl.textContent = formatMoney(estimateLineItemsTotal(estimate.lineItems));
+    saveConfirmEl.hidden = true;
+  };
+
+  document.querySelectorAll("#job-estimate-line-items .estimate-line-item-row").forEach(row => {
+    const li = estimate.lineItems.find(l => l.id === row.getAttribute("data-line-id"));
+    row.querySelectorAll("input").forEach(input => {
+      input.addEventListener("input", () => {
+        const field = input.getAttribute("data-field");
+        li[field] = (field === "quantity" || field === "price") ? (parseFloat(input.value) || 0) : input.value;
+        updateTotal();
+      });
+    });
+  });
+
+  document.querySelectorAll("#job-estimate-line-items .estimate-remove-line-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      estimate.lineItems = estimate.lineItems.filter(l => l.id !== btn.getAttribute("data-line-id"));
+      renderEstimateEditor(job, estimate, isNew);
+    });
+  });
+
+  document.getElementById("job-estimate-add-line-btn").addEventListener("click", () => {
+    estimate.lineItems.push(newEstimateLineItem());
+    renderEstimateEditor(job, estimate, isNew);
+  });
+
+  document.getElementById("job-estimate-save-btn").addEventListener("click", () => {
+    const currentEstimates = getEstimatesForJob(job.id);
+    if (!estimate.name.trim()) {
+      // Excluding this estimate itself matters for a re-save (isNew=false)
+      // with the name cleared back out — it shouldn't count as "in use"
+      // against its own old name.
+      estimate.name = nextAvailableEstimateName(currentEstimates.filter(e => e.id !== estimate.id));
+    }
+    if (isNew) {
+      estimate.id = "est-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+      estimate.created_at = new Date().toISOString();
+      saveNewEstimateForJob(job.id, estimate);
+      draftEstimate = null;
+      selectedEstimateId = estimate.id;
+    } else {
+      updateEstimateForJob(job.id, estimate);
+    }
+    renderEstimatePanel(job);
+  });
+}
+
+function renderEstimatePanel(job) {
+  if (draftEstimate) {
+    renderEstimateEditor(job, draftEstimate, true);
+    return;
+  }
+  if (selectedEstimateId) {
+    const existing = getEstimatesForJob(job.id).find(e => e.id === selectedEstimateId);
+    if (existing) {
+      renderEstimateEditor(job, existing, false);
+      return;
+    }
+    selectedEstimateId = null; // stale reference (deleted elsewhere) — fall through to the list
+  }
+  renderEstimateList(job);
 }
 
 /* ------------------------------ Shared -----------------------------------
@@ -420,10 +937,10 @@ function renderContactCard(contact, elId, opts) {
     ["Phone", escapeHtml(contact.phone)],
     ["Email", escapeHtml(contact.email)],
     ["Address", escapeHtml(contact.address)],
-    ["Preferred contact", escapeHtml(contact.preferred_contact)],
+    ["Preferred Contact", escapeHtml(contact.preferred_contact)],
     ["Source", escapeHtml(contact.source)],
-    ["Sales rep", contactSalesRepPickerHtml(contact)],
-  ];
+    getFeatures().salesRepTracking && ["Sales Rep", contactSalesRepPickerHtml(contact)],
+  ].filter(Boolean);
   contact.custom_fields.forEach(f => rows.push([escapeHtml(f.label), escapeHtml(f.value)]));
 
   el.innerHTML = `
@@ -481,7 +998,7 @@ function renderContactCardEditor(contact, elId, options) {
       <input type="text" class="text-input" id="edit-contact-address" value="${escapeHtml(draft.address)}">
     </div>
     <div class="edit-field">
-      <span class="info-label">Preferred contact</span>
+      <span class="info-label">Preferred Contact</span>
       <select class="select-input" id="edit-contact-preferred">
         ${PREFERRED_CONTACT_OPTIONS.map(opt => `<option value="${opt}" ${opt === draft.preferred_contact ? "selected" : ""}>${opt}</option>`).join("")}
       </select>
@@ -493,11 +1010,11 @@ function renderContactCardEditor(contact, elId, options) {
       </select>
     </div>
     <div class="edit-field" id="source-custom-field" ${showCustomSource ? "" : "hidden"}>
-      <span class="info-label">Custom source</span>
+      <span class="info-label">Custom Source</span>
       <input type="text" class="text-input" id="edit-contact-source-custom" placeholder="Type a source…" value="${escapeHtml(customSourceValue)}">
     </div>
 
-    <div class="card-eyebrow" style="margin-top:16px;">Custom fields</div>
+    <div class="card-eyebrow" style="margin-top:16px;">Custom Fields</div>
     <div id="custom-fields-editor">
       ${draft.custom_fields.map((f, i) => `
         <div class="custom-field-row" data-index="${i}">
@@ -507,7 +1024,7 @@ function renderContactCardEditor(contact, elId, options) {
         </div>
       `).join("")}
     </div>
-    <button type="button" class="btn btn-secondary" id="add-custom-field-btn">+ Add custom field</button>
+    <button type="button" class="btn btn-secondary" id="add-custom-field-btn">+ Add Custom Field</button>
 
     <div class="btn-row">
       <button type="button" class="btn btn-primary" id="save-contact-btn">Save</button>

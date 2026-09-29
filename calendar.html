@@ -4,21 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calendar — Foreman</title>
-<link rel="stylesheet" href="css/styles.css">
-<script src="js/theme.js"></script>
+<link rel="stylesheet" href="css/styles.css?v=1790451174">
+<script src="js/theme.js?v=1790451174"></script>
 </head>
 <body>
 <div class="app-shell">
   <aside class="sidebar">
-    <div class="brand"><span class="brand-mark"></span>Foreman</div>
+    <div class="brand"><span class="brand-mark" hidden></span><span class="brand-name">Foreman</span></div>
     <nav class="nav-links">
       <a class="nav-link" href="index.html">Dashboard</a>
       <a class="nav-link active" href="calendar.html">Calendar</a>
       <a class="nav-link" href="boards.html">Boards</a>
       <a class="nav-link" href="contacts.html">Contacts</a>
+      <a class="nav-link" href="inventory.html">Inventory</a>
       <a class="nav-link" href="settings.html">Settings</a>
     </nav>
-    <div class="sidebar-footer">Foreman Home Services<br>Austin, TX</div>
+    <div class="sidebar-footer"><span class="sidebar-footer-name">Foreman Home Services</span><br>Austin, TX</div>
   </aside>
 
   <main class="main">
@@ -57,15 +58,17 @@
       <div id="calendar-view"></div>
 
       <div class="card">
-        <div class="card-header"><h2>Unscheduled leads</h2></div>
+        <div class="card-header"><h2>Unscheduled Leads</h2></div>
         <div id="unscheduled-list"></div>
       </div>
     </div>
   </main>
 </div>
 
-<script src="js/data.js"></script>
-<script src="js/search.js"></script>
-<script src="js/calendar.js"></script>
+<script src="js/data.js?v=1790451174"></script>
+<script src="js/search.js?v=1790451174"></script>
+<script src="js/brand.js?v=1790451174"></script>
+<script src="js/features.js?v=1790451174"></script>
+<script src="js/calendar.js?v=1790451174"></script>
 </body>
 </html>
