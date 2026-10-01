@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="css/styles.css?v=1790451177">
 <script src="js/theme.js?v=1790451177"></script>
 <script src="js/labels.js?v=1790451177"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js?v=1790451177"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -76,5 +78,24 @@
 <script src="js/brand.js?v=1790451177"></script>
 <script src="js/features.js?v=1790451177"></script>
 <script src="js/dashboard.js?v=1790451177"></script>
+<script>
+// Temporary Supabase connectivity check (dashboard only): fetches the
+// app_settings row and logs the outcome. Console output only — nothing
+// on the page changes.
+window.addEventListener("load", async () => {
+  if (!window.supabaseClient) {
+    console.error("[supabase test] no client — see the [supabase] error above.");
+    return;
+  }
+  const { data, error, status } = await window.supabaseClient.from("app_settings").select("*").limit(1);
+  if (error) {
+    console.error("[supabase test] app_settings query FAILED (HTTP " + status + "):", error);
+  } else if (!data.length) {
+    console.warn("[supabase test] connected (HTTP " + status + "), but app_settings returned 0 rows — empty table, or Row Level Security is hiding them.");
+  } else {
+    console.log("[supabase test] connected — app_settings row:", data[0]);
+  }
+});
+</script>
 </body>
 </html>
