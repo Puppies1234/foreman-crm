@@ -19,14 +19,6 @@ const DEFAULT_FEATURES = {
   jobActivityTabs: { messages: true, calls: true, documents: true, photos: true, estimate: true },
   aiAssistant: true,
   salesRepTracking: true,
-  // One on/off toggle per label value across both fields — built from
-  // JOB_TYPES/APPOINTMENT_TYPES (js/data.js, loaded before this file on
-  // every page) so the default list can never drift from the real option
-  // lists those two pickers/selects actually offer.
-  jobAppointmentLabels: {
-    job_type: Object.fromEntries(JOB_TYPES.map(v => [v, true])),
-    appointment_type: Object.fromEntries(APPOINTMENT_TYPES.map(v => [v, true])),
-  },
 };
 
 function getFeatures() {
@@ -39,10 +31,6 @@ function getFeatures() {
         jobActivityTabs: Object.assign({}, DEFAULT_FEATURES.jobActivityTabs, stored.jobActivityTabs),
         aiAssistant: typeof stored.aiAssistant === "boolean" ? stored.aiAssistant : true,
         salesRepTracking: typeof stored.salesRepTracking === "boolean" ? stored.salesRepTracking : true,
-        jobAppointmentLabels: {
-          job_type: Object.assign({}, DEFAULT_FEATURES.jobAppointmentLabels.job_type, stored.jobAppointmentLabels && stored.jobAppointmentLabels.job_type),
-          appointment_type: Object.assign({}, DEFAULT_FEATURES.jobAppointmentLabels.appointment_type, stored.jobAppointmentLabels && stored.jobAppointmentLabels.appointment_type),
-        },
       };
     }
   } catch (e) {}

@@ -3,7 +3,6 @@
 (function () {
   var STORAGE_KEY = 'foreman-accent-color';
   var TECH_STORAGE_KEY = 'foreman-tech-colors';
-  var STATUS_STORAGE_KEY = 'foreman-status-colors';
   var DEFAULT_ACCENT = { h: 164, s: 50, l: 24 }; // matches #1F5C4C
 
   // Foreman's mock data only has three technicians (Ray Dunmore, Kim Osei,
@@ -12,31 +11,6 @@
     "Ray Dunmore": "#1F5C4C",
     "Kim Osei": "#C9A227",
     "Nia Brackett": "#AF5636"
-  };
-
-  // Scheduled -> Completed deepens through the same pine ramp as before,
-  // just with two more evenly-spaced stops for Proposal Sent/Signed between
-  // Estimating (was "Quoted") and Completed — same progression, not a new
-  // palette.
-  var STATUS_DEFAULTS = {
-    "New Lead": "#6E695C",
-    "Qualified": "#C9A227",
-    "Scheduled": "#1F5C4C",
-    "Estimating": "#1B5042",
-    "Proposal Sent": "#174337",
-    "Proposal Signed": "#12372D",
-    "Completed": "#0E2A22"
-  };
-
-  // Matches the existing badge-* class suffixes in css/styles.css.
-  var STATUS_SLUGS = {
-    "New Lead": "lead",
-    "Qualified": "qualified",
-    "Scheduled": "scheduled",
-    "Estimating": "estimating",
-    "Proposal Sent": "proposal-sent",
-    "Proposal Signed": "proposal-signed",
-    "Completed": "completed"
   };
 
   // Text colours layered on top of a gradient surface. Gold and other light
@@ -190,10 +164,6 @@
     return readColorMap(TECH_STORAGE_KEY, TECH_DEFAULTS);
   }
 
-  function getStatusColors() {
-    return readColorMap(STATUS_STORAGE_KEY, STATUS_DEFAULTS);
-  }
-
   function applyTechColors(map) {
     var root = document.documentElement.style;
     Object.keys(TECH_DEFAULTS).forEach(function (name) {
@@ -207,31 +177,14 @@
     });
   }
 
-  function applyStatusColors(map) {
-    var root = document.documentElement.style;
-    Object.keys(STATUS_DEFAULTS).forEach(function (status) {
-      var hex = (map && map[status]) || STATUS_DEFAULTS[status];
-      var hsl = hexToHsl(hex);
-      var slug = STATUS_SLUGS[status];
-      root.setProperty('--status-' + slug + '-grad', gradCss(hsl));
-      root.setProperty('--status-' + slug + '-fg', inkOn(hslToHex(hsl.h, hsl.s, hsl.l)));
-    });
-  }
-
   function saveTechColors(map) {
     localStorage.setItem(TECH_STORAGE_KEY, JSON.stringify(map));
     applyTechColors(map);
   }
 
-  function saveStatusColors(map) {
-    localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(map));
-    applyStatusColors(map);
-  }
-
   window.ForemanTheme = {
     defaultAccent: DEFAULT_ACCENT,
     techDefaults: TECH_DEFAULTS,
-    statusDefaults: STATUS_DEFAULTS,
     hslToHex: hslToHex,
     hexToHsl: hexToHsl,
     deriveShades: deriveShades,
@@ -243,12 +196,11 @@
     saveAccent: saveAccent,
     getTechColors: getTechColors,
     saveTechColors: saveTechColors,
-    getStatusColors: getStatusColors,
-    saveStatusColors: saveStatusColors,
     apply: applyAccent
   };
 
   applyAccent(getAccent());
   applyTechColors(getTechColors());
-  applyStatusColors(getStatusColors());
+  // Job status colors are applied by js/labels.js (loaded right after this
+  // file), which owns every stage's color along with the stage list itself.
 })();

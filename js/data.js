@@ -185,7 +185,8 @@ const ACTIVITY_LOG = [
   { id: "log7", type: "Job qualified", related_job_id: "j4", description: "Flagged Wes Trammell's clogged main line as likely needing a camera inspection based on symptoms described in intake.", requires_review: true, timestamp: "2026-09-16T15:40" },
 ];
 
-const STATUS_PIPELINE = ["New Lead", "Qualified", "Scheduled", "Estimating", "Proposal Sent", "Proposal Signed", "Completed"];
+// STATUS_PIPELINE, URGENCY_LEVELS, JOB_TYPES and APPOINTMENT_TYPES are
+// defined by js/labels.js (Settings → Pipeline & Labels), loaded in <head>.
 
 /* ------------------------------ Job status ---------------------------------
    Status can change from two places — dragging a card on the Boards page, or
@@ -236,7 +237,9 @@ function setJobStatus(jobId, status) {
   // materials deduction. deductMaterialsForJob() is itself idempotent (see
   // its own flag below), so this can fire on every arrival at Completed
   // without double-deducting.
-  if (status === "Completed") deductMaterialsForJob(jobId);
+  // Matched by the stage's stable role id, not its name, so renaming
+  // "Completed" in Settings → Pipeline & Labels doesn't break this.
+  if (status === statusNameForRole("completed")) deductMaterialsForJob(jobId);
 }
 
 /* ------------------------------ Job urgency ---------------------------------
@@ -245,7 +248,6 @@ function setJobStatus(jobId, status) {
    anywhere else it gets added later — and a change from any one of them
    must show up in all the others. setJobUrgency() is the ONLY sanctioned
    way to change it. */
-const URGENCY_LEVELS = ["Low", "Medium", "High"];
 const JOB_URGENCY_STORAGE_KEY = "foreman-job-urgency";
 let inMemoryUrgencyOverrides = null; // fallback if localStorage throws/unavailable
 
@@ -284,11 +286,7 @@ function setJobUrgency(jobId, urgency) {
 
 /* --------------------------- Job appointment type ----------------------------
    Same shape as Urgency above, and independent from Job Type (a separate
-   field entirely) — its own picker, own store, own setter. A disabled label
-   (Settings → Features → Job & Appointment Labels) can still be applied here
-   if a job already carries it; that filtering happens only where dropdown
-   *choices* are built (enabledAppointmentTypes below), never here. */
-const APPOINTMENT_TYPES = ["Initial Appointment", "Appointment"];
+   field entirely) — its own picker, own store, own setter. */
 const JOB_APPOINTMENT_TYPE_STORAGE_KEY = "foreman-job-appointment-type";
 let inMemoryAppointmentTypeOverrides = null;
 
@@ -323,20 +321,6 @@ function setJobAppointmentType(jobId, appointmentType) {
   const overrides = readAppointmentTypeOverrides();
   overrides[jobId] = appointmentType;
   writeAppointmentTypeOverrides(overrides);
-}
-
-// Settings → Features → Job & Appointment Labels filters which values are
-// offered as NEW choices in the Job Type select and the Appointment Type
-// picker — a disabled label never disappears from a job it's already set
-// to, so `currentValue` is always included even if its own toggle is off.
-function enabledJobTypes(currentValue) {
-  const map = getFeatures().jobAppointmentLabels.job_type;
-  return JOB_TYPES.filter(v => map[v] !== false || v === currentValue);
-}
-
-function enabledAppointmentTypes(currentValue) {
-  const map = getFeatures().jobAppointmentLabels.appointment_type;
-  return APPOINTMENT_TYPES.filter(v => map[v] !== false || v === currentValue);
 }
 
 /* ------------------------------ Sales reps ----------------------------------
@@ -555,7 +539,6 @@ function setContactDetails(contactId, details) {
    from it (and from status/urgency/sales-rep). The card's Edit form also
    edits the job's appointment time, but that's a different entity — see
    setAppointmentTime() below, its own store. */
-const JOB_TYPES = ["Repair", "New Install", "Warranty"];
 const JOB_DETAILS_STORAGE_KEY = "foreman-job-details";
 let inMemoryJobDetailsOverrides = null; // fallback if localStorage throws/unavailable
 
@@ -644,6 +627,54 @@ function setJobType(jobId, jobType) {
   writeJobTypeOverrides(overrides);
 }
 
+/* ----------------------------- Label renames --------------------------------
+   Jobs store a label's *name*, so renaming one in Settings → Pipeline &
+   Labels has to carry every job holding the old name over to the new one.
+   This writes each job's per-field override store directly rather than
+   going through setJobStatus() & co., so a rename is purely a relabel —
+   it never re-triggers a status side effect like Completed's materials
+   deduction. Every job (mock seed or not) that had the old name ends up
+   with an override, so the seed data's original value never resurfaces. */
+const LABEL_OVERRIDE_STORES = {
+  status: { read: () => readStatusOverrides(), write: o => writeStatusOverrides(o) },
+  job_type: { read: () => readJobTypeOverrides(), write: o => writeJobTypeOverrides(o) },
+  appointment_type: { read: () => readAppointmentTypeOverrides(), write: o => writeAppointmentTypeOverrides(o) },
+  urgency: { read: () => readUrgencyOverrides(), write: o => writeUrgencyOverrides(o) },
+};
+
+function jobsUsingLabel(kind, name) {
+  const field = LABEL_KINDS[kind].jobField;
+  return JOBS.filter(job => job[field] === name);
+}
+
+// Returns an error message, or null on success. Names must be non-empty
+// and unique within their list (case-insensitively) — two entries both
+// called "Repair" would be indistinguishable on every job carrying one.
+function renameLabel(kind, id, rawName) {
+  const name = String(rawName || "").trim();
+  if (!name) return "Name can't be empty.";
+  const list = getLabels(kind);
+  const entry = list.find(e => e.id === id);
+  if (!entry) return null;
+  if (entry.name === name) return null;
+  if (list.some(e => e.id !== id && e.name.toLowerCase() === name.toLowerCase())) {
+    return `There's already a ${LABEL_KINDS[kind].noun} called "${name}".`;
+  }
+
+  const oldName = entry.name;
+  entry.name = name;
+  setLabels(kind, list);
+
+  const store = LABEL_OVERRIDE_STORES[kind];
+  const overrides = store.read();
+  jobsUsingLabel(kind, oldName).forEach(job => {
+    job[LABEL_KINDS[kind].jobField] = name;
+    overrides[job.id] = name;
+  });
+  store.write(overrides);
+  return null;
+}
+
 // The rule a new job must follow at creation time: its job_location starts
 // as a one-time COPY of its contact's *current* address, not a live link —
 // after this, editing the job's location never touches the contact's
@@ -712,6 +743,77 @@ function setAppointmentTime(jobId, startTimeIso, endTimeIso) {
   const overrides = readAppointmentTimeOverrides();
   overrides[jobId] = { start_time: startTimeIso, end_time: endTimeIso };
   writeAppointmentTimeOverrides(overrides);
+}
+
+/* ---------------------------- Business settings -----------------------------
+   Settings → General: the business's own contact info, weekly hours,
+   service area and default appointment length. Lives here (not in
+   settings.js) because the job page reads defaultAppointmentMinutes to
+   auto-fill an appointment's end time. Draft-then-Save on the Settings
+   side, same as Notifications; setBusinessSettings() commits it whole. */
+const BUSINESS_SETTINGS_STORAGE_KEY = "foreman-business-settings";
+const BUSINESS_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const APPOINTMENT_DURATION_OPTIONS = [
+  { minutes: 30, label: "30 min" },
+  { minutes: 60, label: "1 hr" },
+  { minutes: 90, label: "1.5 hr" },
+  { minutes: 120, label: "2 hr" },
+  { minutes: 180, label: "3 hr" },
+];
+let inMemoryBusinessSettings = null; // fallback if localStorage throws/unavailable
+
+function defaultBusinessSettings() {
+  const hours = {};
+  BUSINESS_DAYS.forEach(day => {
+    const weekend = day === "Saturday" || day === "Sunday";
+    hours[day] = { open: !weekend, start: "08:00", end: "17:00" };
+  });
+  return {
+    phone: "",
+    email: "",
+    address: { street: "", city: "", state: "", zip: "" },
+    hours,
+    serviceArea: [],
+    defaultAppointmentMinutes: 60,
+  };
+}
+
+function getBusinessSettings() {
+  const defaults = defaultBusinessSettings();
+  let stored = null;
+  try {
+    stored = JSON.parse(localStorage.getItem(BUSINESS_SETTINGS_STORAGE_KEY));
+  } catch (e) {}
+  if (!stored || typeof stored !== "object") stored = inMemoryBusinessSettings;
+  if (!stored || typeof stored !== "object") return defaults;
+
+  const hours = {};
+  BUSINESS_DAYS.forEach(day => { hours[day] = Object.assign({}, defaults.hours[day], stored.hours && stored.hours[day]); });
+  const validDuration = APPOINTMENT_DURATION_OPTIONS.some(o => o.minutes === stored.defaultAppointmentMinutes);
+  return {
+    phone: typeof stored.phone === "string" ? stored.phone : "",
+    email: typeof stored.email === "string" ? stored.email : "",
+    address: Object.assign({}, defaults.address, stored.address),
+    hours,
+    serviceArea: Array.isArray(stored.serviceArea) ? stored.serviceArea.filter(v => typeof v === "string") : [],
+    defaultAppointmentMinutes: validDuration ? stored.defaultAppointmentMinutes : defaults.defaultAppointmentMinutes,
+  };
+}
+
+function setBusinessSettings(settings) {
+  inMemoryBusinessSettings = settings;
+  try {
+    localStorage.setItem(BUSINESS_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  } catch (e) {}
+}
+
+// "HH:MM" + minutes → "HH:MM", clamped to 23:59 so an appointment that
+// would run past midnight stays on its own date instead of wrapping to
+// an end time earlier than its start.
+function addMinutesToTime(hhmm, minutes) {
+  const [h, m] = hhmm.split(":").map(Number);
+  const total = Math.min(h * 60 + m + minutes, 23 * 60 + 59);
+  return String(Math.floor(total / 60)).padStart(2, "0") + ":" + String(total % 60).padStart(2, "0");
 }
 
 /* ----------------------------- Job numbering ------------------------------
@@ -800,23 +902,12 @@ function formatDateOnly(dateStr) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function statusBadgeClass(status) {
-  const map = {
-    "New Lead": "badge-lead",
-    "Qualified": "badge-qualified",
-    "Scheduled": "badge-scheduled",
-    "Estimating": "badge-estimating",
-    "Proposal Sent": "badge-proposal-sent",
-    "Proposal Signed": "badge-proposal-signed",
-    "Completed": "badge-completed",
-  };
-  return map[status] || "badge-lead";
-}
-
-function urgencyBadgeClass(urgency) {
-  const map = { High: "badge-urgent", Medium: "badge-medium", Low: "badge-low" };
-  return map[urgency] || "badge-low";
-}
+// Status / urgency / job type / appointment type badges all take their
+// color from that value's own entry in Settings → Pipeline & Labels.
+function statusBadgeClass(status) { return labelBadgeClass("status", status); }
+function urgencyBadgeClass(urgency) { return labelBadgeClass("urgency", urgency); }
+function jobTypeBadgeClass(jobType) { return labelBadgeClass("job_type", jobType); }
+function appointmentTypeBadgeClass(appointmentType) { return labelBadgeClass("appointment_type", appointmentType); }
 
 // Ray/Kim's chips reuse their existing tech-avatar colour, for identity
 // consistency when the same person is both the field tech and the rep on a
@@ -852,29 +943,20 @@ const PICKER_FIELDS = {
   // Same roster/badge colors as Sales Rep (same people, same identity
   // colors) — a different field on the job entirely, own store above.
   assigned_to: { setValue: (id, v) => setJobAssignedTo(id, v), badgeClass: salesRepBadgeClass },
-  // One flat color for the whole field (not per-value, unlike Urgency/reps)
-  // — Appointment Type is a category tag, not an identity, so every option
-  // shares appointmentTypeBadgeClass.
   appointment_type: { setValue: (id, v) => setJobAppointmentType(id, v), badgeClass: appointmentTypeBadgeClass },
   job_type: { setValue: (id, v) => setJobType(id, v), badgeClass: jobTypeBadgeClass },
 };
 
-// Flat, single-color badge classes for Job Type and Appointment Type tags —
-// deliberately their own color families (moss / plum), distinct from each
-// other and from every status/urgency/rep badge already in the app.
-function jobTypeBadgeClass() { return "badge-job-type"; }
-function appointmentTypeBadgeClass() { return "badge-appt-type"; }
-
 function pickerHtml(field, entityId, options, currentValue) {
   const badgeClass = PICKER_FIELDS[field].badgeClass;
   const rows = options.map(opt => `
-    <button type="button" class="picker-option ${opt === currentValue ? "active" : ""}" data-value="${opt}">
-      <span class="row-dot ${badgeClass(opt)}"></span>${opt}
+    <button type="button" class="picker-option ${opt === currentValue ? "active" : ""}" data-value="${escapeHtml(opt)}">
+      <span class="row-dot ${badgeClass(opt)}"></span>${escapeHtml(opt)}
     </button>
   `).join("");
   return `
     <span class="picker" data-entity-id="${entityId}" data-field="${field}">
-      <button type="button" class="badge ${badgeClass(currentValue)} picker-trigger">${currentValue}</button>
+      <button type="button" class="badge ${badgeClass(currentValue)} picker-trigger">${escapeHtml(currentValue)}</button>
       <div class="picker-menu" hidden>${rows}</div>
     </span>
   `;
@@ -897,11 +979,11 @@ function contactSalesRepPickerHtml(contact) {
 }
 
 function appointmentTypePickerHtml(job) {
-  return pickerHtml("appointment_type", job.id, enabledAppointmentTypes(job.appointment_type), job.appointment_type);
+  return pickerHtml("appointment_type", job.id, APPOINTMENT_TYPES, job.appointment_type);
 }
 
 function jobTypePickerHtml(job) {
-  return pickerHtml("job_type", job.id, enabledJobTypes(job.job_type), job.job_type);
+  return pickerHtml("job_type", job.id, JOB_TYPES, job.job_type);
 }
 
 // Closing on an outside click/scroll is one listener shared by every picker
@@ -962,19 +1044,11 @@ function techSlug(name) {
   return name.split(" ")[0].toLowerCase();
 }
 
-// Slug used for the --status-{slug}-grad / -fg custom properties js/theme.js
-// publishes per job status.
-const STATUS_SLUGS = {
-  "New Lead": "lead",
-  "Qualified": "qualified",
-  "Scheduled": "scheduled",
-  "Estimating": "estimating",
-  "Proposal Sent": "proposal-sent",
-  "Proposal Signed": "proposal-signed",
-  "Completed": "completed",
-};
+// Slug used for the --status-{slug}-grad / -fg custom properties js/labels.js
+// publishes per pipeline stage — the stage's stable id.
 function statusSlug(status) {
-  return STATUS_SLUGS[status] || "lead";
+  const entry = findLabel("status", status);
+  return entry ? entry.id : "lead";
 }
 
 // Shared trailing chevron for clickable rows (schedule rows, list rows in
@@ -1095,7 +1169,7 @@ const REVIEW_LISTS = {
     title: "New Leads This Week",
     verb: "reviewed",
     storageKey: "foreman-leads-reviewed",
-    getItems: () => JOBS.filter(j => j.status === "New Lead"),
+    getItems: () => JOBS.filter(j => j.status === statusNameForRole("lead")),
     getId: job => job.id,
   },
   appointments: {
@@ -1484,6 +1558,59 @@ function estimateLineItemsTotal(lineItems) {
   return lineItems.reduce((sum, li) => sum + (Number(li.quantity) || 0) * (Number(li.price) || 0), 0);
 }
 
+/* ------------------------ Estimate defaults (Settings) ------------------------
+   Settings → Estimates → Estimate Defaults. Each one is COPIED onto an
+   estimate at the moment it's created (tax_rate and terms are stored on
+   the estimate itself; markup only scales line-item prices as they're
+   copied from a template) — so changing a default later never reaches
+   back into an estimate that already exists. */
+const ESTIMATE_DEFAULTS_STORAGE_KEY = "foreman-estimate-defaults";
+const DEFAULT_ESTIMATE_TERMS = "This estimate is valid for 30 days from the date issued. Pricing covers the labor and materials listed above; any additional work found once the job is underway will be quoted separately and done only with your approval. A deposit may be required to schedule work, with the balance due on completion. All workmanship is warrantied for one year from completion; manufacturer warranties apply to parts and equipment.";
+
+function getEstimateDefaults() {
+  const fallback = { taxRate: 0, terms: DEFAULT_ESTIMATE_TERMS, markup: 0 };
+  try {
+    const stored = JSON.parse(localStorage.getItem(ESTIMATE_DEFAULTS_STORAGE_KEY));
+    if (stored && typeof stored === "object") {
+      return {
+        taxRate: Number.isFinite(stored.taxRate) && stored.taxRate >= 0 ? stored.taxRate : 0,
+        terms: typeof stored.terms === "string" ? stored.terms : DEFAULT_ESTIMATE_TERMS,
+        markup: Number.isFinite(stored.markup) && stored.markup >= 0 ? stored.markup : 0,
+      };
+    }
+  } catch (e) {}
+  return fallback;
+}
+
+function setEstimateDefaults(defaults) {
+  try {
+    localStorage.setItem(ESTIMATE_DEFAULTS_STORAGE_KEY, JSON.stringify(defaults));
+  } catch (e) {}
+}
+
+// Rounds to the nearest cent, half up. toPrecision first strips float
+// noise, so a true half like 85.50 × 1.15 = 98.325 (stored as 98.32499…)
+// rounds up to 98.33 instead of down.
+function roundCents(n) {
+  return Math.round(Number((n * 100).toPrecision(12))) / 100;
+}
+
+// Subtotal, tax and total for one estimate. An estimate saved before tax
+// existed has no tax_rate, which counts as 0% — it isn't silently taxed at
+// whatever today's default happens to be.
+function estimateTotals(estimate) {
+  const subtotal = estimateLineItemsTotal(estimate.lineItems || []);
+  const taxRate = Number(estimate.tax_rate) || 0;
+  const tax = roundCents(subtotal * taxRate / 100);
+  return { subtotal, taxRate, tax, total: subtotal + tax };
+}
+
+// formatMoney() for estimate figures, which (unlike quote amounts) can carry
+// cents once tax or markup is involved.
+function formatMoneyCents(n) {
+  return "$" + (Number(n) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function newEstimateLineItem() {
   return {
     id: "li-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
@@ -1549,10 +1676,19 @@ function getEstimatesForJob(jobId) {
 // brand-new estimate that isn't saved into the job's list yet. Nothing is
 // written to storage here; saveNewEstimateForJob below is what actually
 // commits a new estimate.
-function estimateLineItemsFromTemplate(templateId) {
+//
+// markupPercent (optional) scales each copied price by (1 + markup/100),
+// rounded to the cent — applied to the copy only, never the template.
+function estimateLineItemsFromTemplate(templateId, markupPercent) {
   if (!templateId) return [];
   const template = getEstimateTemplates().find(t => t.id === templateId);
-  return template ? JSON.parse(JSON.stringify(template.lineItems)) : [];
+  if (!template) return [];
+  const items = JSON.parse(JSON.stringify(template.lineItems));
+  const factor = 1 + (Number(markupPercent) || 0) / 100;
+  if (factor !== 1) {
+    items.forEach(li => { li.price = roundCents((Number(li.price) || 0) * factor); });
+  }
+  return items;
 }
 
 // The smallest "Estimate N" number not already used by any of this job's

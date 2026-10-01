@@ -145,9 +145,9 @@ function renderRecentlyViewed() {
         <div class="recent-card-body">
           <div class="recent-card-name">${contact.full_name}</div>
           <div class="recent-card-badges">
-            <span class="badge ${jobTypeBadgeClass()}">${job.job_type}</span>
-            <span class="badge ${appointmentTypeBadgeClass()}">${job.appointment_type}</span>
-            <span class="badge ${statusBadgeClass(job.status)}">${job.status}</span>
+            <span class="badge ${jobTypeBadgeClass(job.job_type)}">${escapeHtml(job.job_type)}</span>
+            <span class="badge ${appointmentTypeBadgeClass(job.appointment_type)}">${escapeHtml(job.appointment_type)}</span>
+            <span class="badge ${statusBadgeClass(job.status)}">${escapeHtml(job.status)}</span>
           </div>
           <div class="recent-card-address">${job.job_location}</div>
         </div>
@@ -184,9 +184,9 @@ function renderSchedule() {
           <div class="schedule-title">${job.service_type}</div>
           <div class="schedule-meta">${contact.full_name} · ${job.assigned_to} · ${appt.status}</div>
         </div>
-        <span class="badge ${jobTypeBadgeClass()}">${job.job_type}</span>
-        <span class="badge ${appointmentTypeBadgeClass()}">${job.appointment_type}</span>
-        <span class="badge ${statusBadgeClass(job.status)}">${job.status}</span>
+        <span class="badge ${jobTypeBadgeClass(job.job_type)}">${escapeHtml(job.job_type)}</span>
+        <span class="badge ${appointmentTypeBadgeClass(job.appointment_type)}">${escapeHtml(job.appointment_type)}</span>
+        <span class="badge ${statusBadgeClass(job.status)}">${escapeHtml(job.status)}</span>
         ${chevronIcon()}
       </a>
     `;

@@ -829,8 +829,6 @@ a.schedule-item:hover { background: var(--paper); }
 .badge-completed { background-image: var(--gloss), var(--status-completed-grad, var(--pine-grad)); color: var(--status-completed-fg, #FBFAF6); }
 
 .badge-urgent { background-image: var(--gloss), var(--terracotta-grad); color: #FBFAF6; }
-.badge-medium { background-image: var(--gloss), var(--gold-grad); color: var(--gold-ink); }
-.badge-low { background-image: var(--gloss), var(--gray-grad); color: #FBFAF6; }
 
 /* Sales Rep badges — Ray/Kim reuse their tech-avatar colour (same person,
    same identity colour whether shown as tech or rep); Mike/Dana get the
@@ -843,11 +841,9 @@ a.schedule-item:hover { background: var(--paper); }
 
 .badge-review { background-image: var(--gloss), var(--terracotta-grad); color: #FBFAF6; }
 
-/* Job Type / Appointment Type tags — one flat color per field (not per
-   value, unlike Urgency/rep badges), since these read as categories rather
-   than identities. */
-.badge-job-type { background-image: var(--gloss), var(--moss-grad); color: #FBFAF6; }
-.badge-appt-type { background-image: var(--gloss), var(--plum-grad); color: #FBFAF6; }
+/* Pipeline stage, Job Type, Appointment Type and Urgency badges get their
+   colors from per-value .lbl-* rules js/labels.js injects at load, driven
+   by Settings → Pipeline & Labels. */
 
 /* --- Needs review flag --- */
 
@@ -2985,3 +2981,247 @@ mark.search-hit {
   .today-strip { flex-direction: column; align-items: flex-start; }
   .recent-card { flex-basis: 210px; width: 210px; }
 }
+
+/* --- Settings > General --- */
+
+.hours-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.hours-row:last-child { border-bottom: none; }
+.hours-day { width: 100px; font-weight: 600; font-size: 0.92rem; }
+.hours-state { width: 52px; font-size: 0.82rem; color: var(--ink-muted); }
+.hours-times { display: flex; align-items: center; gap: 8px; }
+.hours-times .text-input { width: 130px; }
+.hours-sep { font-size: 0.82rem; color: var(--ink-muted); }
+
+/* Tag-style input: chips and the text box share one field-looking wrapper. */
+.tag-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow-chip);
+  cursor: text;
+}
+.tag-input:focus-within { border-color: var(--pine); box-shadow: 0 0 0 3px var(--pine-tint); }
+.tag-chip-list { display: contents; }
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 100px;
+  background: var(--pine-tint);
+  color: var(--pine-dark);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.tag-chip-remove {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.tag-chip-remove:hover { background: rgba(31, 92, 76, 0.15); }
+.tag-input-field {
+  flex: 1;
+  min-width: 140px;
+  border: none;
+  background: none;
+  padding: 4px 2px;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.tag-input-field:focus { outline: none; }
+
+/* --- Settings > Pipeline & Labels --- */
+
+.label-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+}
+.label-editor-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.label-editor-name { flex: 1; min-width: 0; max-width: 320px; }
+.label-editor-usage {
+  min-width: 52px;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  text-align: right;
+}
+.label-editor-btn {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-chip);
+}
+.label-editor-btn:hover:not(:disabled) { background: var(--pine-tint); }
+.label-editor-btn:disabled { opacity: 0.35; cursor: default; }
+.label-editor-delete:hover:not(:disabled) { background: var(--terracotta-tint); color: var(--terracotta); }
+.label-editor-msg {
+  margin: 8px 0 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--terracotta-tint);
+  color: #8A3F25;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.label-editor-add { margin-top: 10px; }
+.settings-form { max-width: 640px; }
+.settings-form .info-label { width: 130px; }
+
+/* Clickable swatches (Job Type / Appointment Type / Urgency) open the color
+   popover; Pipeline Stages' swatch stays a plain dot. */
+button.label-editor-swatch {
+  border: none;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+button.label-editor-swatch:hover,
+button.label-editor-swatch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--paper-raised), 0 0 0 4px var(--pine), var(--shadow-chip);
+}
+
+.label-color-popover {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--paper-raised);
+  border-radius: 10px;
+  box-shadow: var(--shadow-raised);
+}
+.label-color-popover .swatch-row {
+  display: grid;
+  grid-template-columns: repeat(5, 26px);
+  gap: 8px;
+}
+.label-color-popover .swatch-btn { width: 26px; height: 26px; }
+.label-color-popover .swatch-btn.active {
+  box-shadow: 0 0 0 2px var(--paper-raised), 0 0 0 4px var(--ink), var(--shadow-chip);
+}
+.label-color-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+.label-color-custom .color-input { width: 28px; height: 28px; }
+
+/* --- Settings > Estimates: defaults --- */
+
+.settings-number-input { max-width: 120px; }
+.settings-input-suffix { color: var(--ink-muted); font-size: 0.88rem; font-weight: 600; }
+.settings-form .edit-field .settings-number-input { flex: 0 1 120px; }
+#est-default-terms { resize: vertical; font-family: inherit; line-height: 1.5; }
+
+/* --- Job page Estimate tab: markup option, tax line, terms --- */
+
+.estimate-markup-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+.estimate-markup-option input { accent-color: var(--pine); width: 16px; height: 16px; }
+
+.estimate-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 14px;
+}
+.estimate-summary-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.9rem;
+}
+.estimate-summary-row span:first-child { color: var(--ink-muted); font-weight: 600; }
+.estimate-summary-row span:last-child { min-width: 90px; text-align: right; font-weight: 600; }
+.estimate-tax-label { display: inline-flex; align-items: center; gap: 6px; }
+.estimate-tax-input { width: 76px; padding: 4px 8px; text-align: right; }
+
+.estimate-terms-field { margin-top: 18px; }
+.estimate-terms-field .info-label { display: block; margin-bottom: 6px; }
+.estimate-terms-field textarea { resize: vertical; font-family: inherit; line-height: 1.5; }
+
+/* --- Settings > Payments (placeholder) --- */
+
+.payment-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.payment-status-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.15rem; margin-top: 2px; }
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.connection-status-off { background: var(--line); color: var(--ink-muted); }
+.connection-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #9A9584; }
+
+.payment-sync-list { list-style: none; margin: 0; padding: 0; }
+.payment-sync-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.payment-sync-list li:last-child { border-bottom: none; }
+.payment-sync-list .feature-toggle-label { grid-column: 1; }
+.payment-sync-list .feature-toggle-desc { grid-column: 1; }
+.payment-sync-badge { grid-column: 2; grid-row: 1 / span 2; background: var(--line); color: var(--ink-muted); box-shadow: none; text-shadow: none; }

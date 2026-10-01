@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Settings — Foreman</title>
-<link rel="stylesheet" href="css/styles.css?v=1790451174">
-<script src="js/theme.js?v=1790451174"></script>
+<link rel="stylesheet" href="css/styles.css?v=1790451177">
+<script src="js/theme.js?v=1790451177"></script>
+<script src="js/labels.js?v=1790451177"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -42,16 +43,116 @@
     <div class="settings-tabs" id="settings-tabs">
       <button type="button" class="settings-tab-btn active" data-tab="general">General</button>
       <button type="button" class="settings-tab-btn" data-tab="design">Design</button>
+      <button type="button" class="settings-tab-btn" data-tab="pipeline-labels">Pipeline &amp; Labels</button>
       <button type="button" class="settings-tab-btn" data-tab="features">Features</button>
       <button type="button" class="settings-tab-btn" data-tab="notifications">Notifications</button>
       <button type="button" class="settings-tab-btn" data-tab="automations">Automations</button>
       <button type="button" class="settings-tab-btn" data-tab="estimates">Estimates</button>
+      <button type="button" class="settings-tab-btn" data-tab="payments">Payments</button>
     </div>
 
     <div class="settings-panel" data-panel="general">
-      <div class="card">
-        <div class="card-header"><h2>General</h2></div>
-        <p class="empty-note">More settings coming soon.</p>
+      <div class="accordion-section" data-accordion="business-info">
+      <button type="button" class="accordion-header"><h2>Business Info</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="settings-form">
+        <div class="edit-field">
+          <span class="info-label">Business Phone</span>
+          <input type="tel" class="text-input" id="biz-phone" placeholder="(512) 555-0100">
+        </div>
+        <div class="edit-field">
+          <span class="info-label">Business Email</span>
+          <input type="email" class="text-input" id="biz-email" placeholder="office@example.com">
+        </div>
+        <div class="edit-field">
+          <span class="info-label">Street</span>
+          <input type="text" class="text-input" id="biz-street" placeholder="123 Main St">
+        </div>
+        <div class="edit-field">
+          <span class="info-label">City</span>
+          <input type="text" class="text-input" id="biz-city" placeholder="Austin">
+        </div>
+        <div class="edit-field">
+          <span class="info-label">State</span>
+          <input type="text" class="text-input" id="biz-state" placeholder="TX" maxlength="2">
+        </div>
+        <div class="edit-field">
+          <span class="info-label">ZIP</span>
+          <input type="text" class="text-input" id="biz-zip" placeholder="78701" inputmode="numeric" maxlength="10">
+        </div>
+        </div>
+      </div></div>
+      </div>
+      <div class="accordion-section" data-accordion="business-hours">
+      <button type="button" class="accordion-header"><h2>Business Hours</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div id="business-hours-list"></div>
+      </div></div>
+      </div>
+      <div class="accordion-section" data-accordion="service-area">
+      <button type="button" class="accordion-header"><h2>Service Area</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <p class="page-subtitle" style="margin:0 0 12px;">ZIP codes or city names you serve. Press Enter or comma to add each one.</p>
+        <div class="tag-input" id="service-area-input-wrap">
+          <div class="tag-chip-list" id="service-area-chips"></div>
+          <input type="text" class="tag-input-field" id="service-area-input" placeholder="Add a ZIP or city…">
+        </div>
+      </div></div>
+      </div>
+      <div class="accordion-section" data-accordion="appointment-defaults">
+      <button type="button" class="accordion-header"><h2>Default Appointment Duration</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <p class="page-subtitle" style="margin:0 0 12px;">When you set an appointment's start time on a job, the end time fills in this far after it — unless you've already set the end time yourself.</p>
+        <div class="edit-field" style="max-width:340px;">
+          <span class="info-label">Duration</span>
+          <select class="select-input" id="biz-default-duration"></select>
+        </div>
+      </div></div>
+      </div>
+      <div class="accordion-section" data-accordion="data-export">
+      <button type="button" class="accordion-header"><h2>Data Export</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" id="data-export-btn">Download My Data</button>
+          <span class="save-confirm" id="data-export-confirm" hidden>Downloading contacts.csv, jobs.csv and estimates.csv…</span>
+        </div>
+        <p class="page-subtitle" style="margin:10px 0 0;">Exports everything currently in this browser.</p>
+      </div></div>
+      </div>
+
+      <div class="btn-row" style="margin-top:20px;">
+        <button type="button" class="btn btn-primary" id="general-save-btn">Save</button>
+        <span class="save-confirm" id="general-save-confirm" hidden>Saved — business settings updated.</span>
+      </div>
+    </div>
+
+    <div class="settings-panel" data-panel="pipeline-labels" hidden>
+      <div class="card" style="margin-bottom:20px;">
+        <p class="page-subtitle" style="margin:0;">These lists drive every status pill, Boards column, tag and dropdown in the app — changes apply right away. A value can't be deleted while any job still uses it.</p>
+      </div>
+      <div class="accordion-section" data-accordion="labels-status">
+      <button type="button" class="accordion-header"><h2>Pipeline Stages</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="label-editor" data-label-kind="status"></div>
+      </div></div>
+      </div>
+      <div class="accordion-section" data-accordion="labels-job-type">
+      <button type="button" class="accordion-header"><h2>Job Type Labels</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="label-editor" data-label-kind="job_type"></div>
+      </div></div>
+      </div>
+      <div class="accordion-section" data-accordion="labels-appointment-type">
+      <button type="button" class="accordion-header"><h2>Appointment Type Labels</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="label-editor" data-label-kind="appointment_type"></div>
+      </div></div>
+      </div>
+      <div class="accordion-section" data-accordion="labels-urgency">
+      <button type="button" class="accordion-header"><h2>Urgency Levels</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="label-editor" data-label-kind="urgency"></div>
+      </div></div>
       </div>
     </div>
 
@@ -207,16 +308,6 @@
       </div></div>
       </div>
 
-      <div class="accordion-section" data-accordion="job-appointment-labels">
-      <button type="button" class="accordion-header"><h2>Job &amp; Appointment Labels</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
-      <div class="accordion-body"><div class="accordion-body-inner">
-        <p class="page-subtitle" style="margin:0 0 12px;">Turning a label off only removes it from the dropdown for new choices — jobs already set to it keep showing it as before.</p>
-        <div class="feature-toggle-subhead">Appointment Type</div>
-        <div id="feature-list-appointment-type"></div>
-        <div class="feature-toggle-subhead">Job Type</div>
-        <div id="feature-list-job-type"></div>
-      </div></div>
-      </div>
     </div>
 
     <div class="settings-panel" data-panel="notifications" hidden>
@@ -288,6 +379,31 @@
     </div>
 
     <div class="settings-panel" data-panel="estimates" hidden>
+      <div class="accordion-section" data-accordion="estimate-defaults">
+      <button type="button" class="accordion-header"><h2>Estimate Defaults</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <p class="page-subtitle" style="margin:0 0 12px;">Copied onto each new estimate when it's created — changing these later never alters an estimate that already exists.</p>
+        <div class="settings-form">
+          <div class="edit-field">
+            <span class="info-label">Default Tax Rate</span>
+            <input type="number" class="text-input settings-number-input" id="est-default-tax" min="0" step="0.01" placeholder="0">
+            <span class="settings-input-suffix">%</span>
+          </div>
+          <div class="edit-field">
+            <span class="info-label">Default Markup</span>
+            <input type="number" class="text-input settings-number-input" id="est-default-markup" min="0" step="0.01" placeholder="0">
+            <span class="settings-input-suffix">%</span>
+          </div>
+        </div>
+        <p class="page-subtitle" style="margin:4px 0 12px;">Markup is offered as a checkbox when starting an estimate from a template, and raises each copied price by this much.</p>
+        <label class="info-label" for="est-default-terms" style="display:block;margin-bottom:6px;">Default Terms &amp; Conditions</label>
+        <textarea class="text-input" id="est-default-terms" rows="6"></textarea>
+        <div class="btn-row" style="margin-top:14px;">
+          <button type="button" class="btn btn-primary" id="est-defaults-save-btn">Save</button>
+          <span class="save-confirm" id="est-defaults-save-confirm" hidden>Saved — new estimates will use these defaults.</span>
+        </div>
+      </div></div>
+      </div>
       <div class="accordion-section" data-accordion="estimate-templates">
       <button type="button" class="accordion-header"><h2>Estimate Templates</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
       <div class="accordion-body"><div class="accordion-body-inner">
@@ -299,13 +415,69 @@
       </div></div>
       </div>
     </div>
+
+    <div class="settings-panel" data-panel="payments" hidden>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="payment-status-row">
+          <div>
+            <div class="card-eyebrow">Connection Status</div>
+            <div class="payment-status-title">Payment Portal</div>
+          </div>
+          <span class="connection-status connection-status-off"><span class="connection-status-dot"></span>Not Connected</span>
+        </div>
+        <p class="page-subtitle" style="margin:12px 0 0;">Preview only — payment syncing isn't connected yet. Nothing on this tab talks to a payment provider.</p>
+      </div>
+      <div class="accordion-section" data-accordion="payment-portal">
+      <button type="button" class="accordion-header"><h2>Portal Connection</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="settings-form">
+          <div class="edit-field">
+            <span class="info-label">Portal URL</span>
+            <input type="url" class="text-input" id="payment-portal-url" placeholder="https://pay.example.com" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="edit-field">
+            <span class="info-label">API Key</span>
+            <input type="text" class="text-input" id="payment-api-key" placeholder="Paste your portal API key" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <p class="page-subtitle" style="margin:8px 0 0;">These won't do anything until your payment portal is connected later. They're saved in this browser only.</p>
+        <div class="btn-row" style="margin-top:14px;">
+          <button type="button" class="btn btn-primary" id="payment-save-btn">Save</button>
+          <span class="save-confirm" id="payment-save-confirm" hidden>Saved — stored for when the portal is connected.</span>
+        </div>
+      </div></div>
+      </div>
+      <div class="accordion-section" data-accordion="payment-sync">
+      <button type="button" class="accordion-header"><h2>What Will Sync Here</h2><svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <p class="page-subtitle" style="margin:0 0 12px;">Once a payment portal is connected, these will stay in step automatically. None of it is active yet.</p>
+        <ul class="payment-sync-list">
+          <li>
+            <div class="feature-toggle-label">Job quote &amp; estimate totals</div>
+            <div class="feature-toggle-desc">Each job's quote amount and estimate totals (including tax) sent to the portal as the amount due.</div>
+            <span class="badge payment-sync-badge">Not Yet Active</span>
+          </li>
+          <li>
+            <div class="feature-toggle-label">Payment status per job</div>
+            <div class="feature-toggle-desc">Unpaid, partially paid or paid — pulled back from the portal and shown on each job.</div>
+            <span class="badge payment-sync-badge">Not Yet Active</span>
+          </li>
+          <li>
+            <div class="feature-toggle-label">Invoice records</div>
+            <div class="feature-toggle-desc">Invoices issued through the portal, attached to the job they belong to.</div>
+            <span class="badge payment-sync-badge">Not Yet Active</span>
+          </li>
+        </ul>
+      </div></div>
+      </div>
+    </div>
   </main>
 </div>
 
-<script src="js/data.js?v=1790451174"></script>
-<script src="js/search.js?v=1790451174"></script>
-<script src="js/brand.js?v=1790451174"></script>
-<script src="js/features.js?v=1790451174"></script>
-<script src="js/settings.js?v=1790451174"></script>
+<script src="js/data.js?v=1790451177"></script>
+<script src="js/search.js?v=1790451177"></script>
+<script src="js/brand.js?v=1790451177"></script>
+<script src="js/features.js?v=1790451177"></script>
+<script src="js/settings.js?v=1790451177"></script>
 </body>
 </html>

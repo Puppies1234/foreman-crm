@@ -156,8 +156,8 @@ function renderDayColumn(dateObj, { big = false } = {}) {
         <div class="appt-title">${job.service_type}</div>
         <div class="appt-customer">${contact.full_name}</div>
         <div class="appt-badges">
-          <span class="badge ${jobTypeBadgeClass()}">${job.job_type}</span>
-          <span class="badge ${appointmentTypeBadgeClass()}">${job.appointment_type}</span>
+          <span class="badge ${jobTypeBadgeClass(job.job_type)}">${escapeHtml(job.job_type)}</span>
+          <span class="badge ${appointmentTypeBadgeClass(job.appointment_type)}">${escapeHtml(job.appointment_type)}</span>
         </div>
       </a>
     `;
@@ -265,8 +265,8 @@ function renderUnscheduled() {
             <span class="row-dot" style="background-image: var(--gloss), var(--status-${statusSlug(job.status)}-grad, var(--pine-grad));"></span>
             ${job.service_type}
           </div>
-          <div class="unscheduled-meta">${contact.full_name} · ${job.job_type}</div>
-          <span class="badge ${statusBadgeClass(job.status)}">${job.status}</span>
+          <div class="unscheduled-meta">${contact.full_name} · ${escapeHtml(job.job_type)}</div>
+          <span class="badge ${statusBadgeClass(job.status)}">${escapeHtml(job.status)}</span>
           ${chevronIcon()}
         </div>
       </a>

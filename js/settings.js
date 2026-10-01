@@ -249,6 +249,8 @@ function setAutomations(rules) {
       // Ava/Inventory sections depend on Features toggles that can change
       // without a page reload (both tabs live on this same page) — recheck
       // every time Notifications becomes the visible tab, not just once.
+      if (target === 'design') renderStatusColorRows();
+      if (target === 'pipeline-labels') renderAllLabelEditors();
       if (target === 'notifications') refreshNotificationSectionVisibility();
       if (target === 'automations') refreshAutomationsTab();
       if (target === 'estimates') refreshEstimatesTab();
@@ -359,7 +361,10 @@ function setAutomations(rules) {
   ];
 
   var techColors = Object.assign({}, theme.getTechColors());
-  var statusColors = Object.assign({}, theme.getStatusColors());
+  // Keyed by stage id — the stages themselves (and their saved colors)
+  // live in Settings → Pipeline & Labels' store (js/labels.js), so this
+  // only holds unsaved picks until Save writes them back there.
+  var statusColorDraft = {};
 
   function buildColorRow(label, currentHex, onChange) {
     var row = document.createElement('div');
@@ -408,14 +413,21 @@ function setAutomations(rules) {
     techList.appendChild(row);
   });
 
-  var statusList = document.getElementById('status-color-list');
-  Object.keys(theme.statusDefaults).forEach(function (status) {
-    var row = buildColorRow(status, statusColors[status], function (hex) {
-      statusColors[status] = hex;
-      saveConfirm.hidden = true;
+  // Rebuilt whenever Design becomes the visible tab, since stages can be
+  // added, renamed or reordered over on Pipeline & Labels without a reload.
+  function renderStatusColorRows() {
+    var statusList = document.getElementById('status-color-list');
+    statusList.innerHTML = '';
+    getLabels('status').forEach(function (stage) {
+      var row = buildColorRow(stage.name, statusColorDraft[stage.id] || stage.color, function (hex) {
+        statusColorDraft[stage.id] = hex;
+        saveConfirm.hidden = true;
+      });
+      statusList.appendChild(row);
     });
-    statusList.appendChild(row);
-  });
+    refreshOpenAccordionHeight(document.querySelector('.accordion-section[data-accordion="status-colors"]'));
+  }
+  renderStatusColorRows();
 
   // --- Accordion sections (Design and Features tabs) ---
   // Independent — each header only toggles its own section, and every
@@ -497,30 +509,6 @@ function setAutomations(rules) {
     });
   }
 
-  // Label toggles (Job Type / Appointment Type) are keyed by the label
-  // value itself rather than a fixed camelCase key, and carry a rule the
-  // generic renderFeatureGroup doesn't: a field can never end with zero
-  // enabled values. Turning off the last one on is silently ignored — the
-  // state never changes, and re-rendering just snaps that switch back on.
-  function renderJobAppointmentLabelGroup(containerId, field, allValues) {
-    var container = document.getElementById(containerId);
-    container.innerHTML = '';
-    allValues.forEach(function (value) {
-      var checked = featuresState.jobAppointmentLabels[field][value] !== false;
-      var row = buildToggleRow(value, checked, function (nextChecked) {
-        var enabledCount = allValues.filter(function (v) {
-          return featuresState.jobAppointmentLabels[field][v] !== false;
-        }).length;
-        if (!nextChecked && enabledCount <= 1) {
-          renderJobAppointmentLabelGroup(containerId, field, allValues);
-          return;
-        }
-        featuresState.jobAppointmentLabels[field][value] = nextChecked;
-      });
-      container.appendChild(row);
-    });
-  }
-
   function renderAllFeatureGroups() {
     renderFeatureGroup('feature-list-modules', [
       ['boards', 'Boards'],
@@ -550,9 +538,6 @@ function setAutomations(rules) {
     renderFeatureGroup('feature-list-sales-rep-tracking', [
       ['salesRepTracking', 'Sales Rep Tracking'],
     ], null, 'salesRepTracking');
-
-    renderJobAppointmentLabelGroup('feature-list-appointment-type', 'appointment_type', APPOINTMENT_TYPES);
-    renderJobAppointmentLabelGroup('feature-list-job-type', 'job_type', JOB_TYPES);
   }
   renderAllFeatureGroups();
 
@@ -565,6 +550,566 @@ function setAutomations(rules) {
     featuresResetConfirm.hidden = false;
     setTimeout(function () { featuresResetConfirm.hidden = true; }, 2500);
   });
+
+  // --- General tab ---
+  // Draft-then-Save, same as Notifications: nothing here persists until the
+  // Save button commits the whole bundle via setBusinessSettings().
+  var businessDraft = getBusinessSettings();
+  var generalSaveConfirm = document.getElementById('general-save-confirm');
+
+  function markGeneralDirty() {
+    generalSaveConfirm.hidden = true;
+  }
+
+  // Plain text fields, each bound straight to its spot in the draft.
+  [
+    ['biz-phone', function (v) { businessDraft.phone = v; }, function () { return businessDraft.phone; }],
+    ['biz-email', function (v) { businessDraft.email = v; }, function () { return businessDraft.email; }],
+    ['biz-street', function (v) { businessDraft.address.street = v; }, function () { return businessDraft.address.street; }],
+    ['biz-city', function (v) { businessDraft.address.city = v; }, function () { return businessDraft.address.city; }],
+    ['biz-state', function (v) { businessDraft.address.state = v; }, function () { return businessDraft.address.state; }],
+    ['biz-zip', function (v) { businessDraft.address.zip = v; }, function () { return businessDraft.address.zip; }],
+  ].forEach(function (binding) {
+    var input = document.getElementById(binding[0]);
+    input.value = binding[2]();
+    input.addEventListener('input', function () {
+      binding[1](input.value.trim());
+      markGeneralDirty();
+    });
+  });
+
+  function buildSwitch(checked, onChange) {
+    var switchLabel = document.createElement('label');
+    switchLabel.className = 'switch';
+    var input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = checked;
+    var track = document.createElement('span');
+    track.className = 'switch-track';
+    var thumb = document.createElement('span');
+    thumb.className = 'switch-thumb';
+    track.appendChild(thumb);
+    switchLabel.appendChild(input);
+    switchLabel.appendChild(track);
+    input.addEventListener('change', function () { onChange(input.checked); });
+    return switchLabel;
+  }
+
+  function renderBusinessHours() {
+    var container = document.getElementById('business-hours-list');
+    container.innerHTML = '';
+    BUSINESS_DAYS.forEach(function (day) {
+      var hours = businessDraft.hours[day];
+      var row = document.createElement('div');
+      row.className = 'hours-row';
+
+      var dayEl = document.createElement('span');
+      dayEl.className = 'hours-day';
+      dayEl.textContent = day;
+      row.appendChild(dayEl);
+
+      row.appendChild(buildSwitch(hours.open, function (open) {
+        hours.open = open;
+        markGeneralDirty();
+        renderBusinessHours();
+      }));
+
+      var stateEl = document.createElement('span');
+      stateEl.className = 'hours-state';
+      stateEl.textContent = hours.open ? 'Open' : 'Closed';
+      row.appendChild(stateEl);
+
+      if (hours.open) {
+        var times = document.createElement('div');
+        times.className = 'hours-times';
+        ['start', 'end'].forEach(function (key, i) {
+          if (i === 1) {
+            var sep = document.createElement('span');
+            sep.className = 'hours-sep';
+            sep.textContent = 'to';
+            times.appendChild(sep);
+          }
+          var input = document.createElement('input');
+          input.type = 'time';
+          input.className = 'text-input';
+          input.value = hours[key];
+          input.setAttribute('aria-label', day + ' ' + (key === 'start' ? 'opening' : 'closing') + ' time');
+          input.addEventListener('input', function () {
+            hours[key] = input.value;
+            markGeneralDirty();
+          });
+          times.appendChild(input);
+        });
+        row.appendChild(times);
+      }
+      container.appendChild(row);
+    });
+    refreshOpenAccordionHeight(document.querySelector('.accordion-section[data-accordion="business-hours"]'));
+  }
+  renderBusinessHours();
+
+  var serviceAreaInput = document.getElementById('service-area-input');
+
+  function renderServiceAreaChips() {
+    var list = document.getElementById('service-area-chips');
+    list.innerHTML = '';
+    businessDraft.serviceArea.forEach(function (entry, i) {
+      var chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.appendChild(document.createTextNode(entry));
+      var remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'tag-chip-remove';
+      remove.setAttribute('aria-label', 'Remove ' + entry);
+      remove.textContent = '×';
+      remove.addEventListener('click', function () {
+        businessDraft.serviceArea.splice(i, 1);
+        markGeneralDirty();
+        renderServiceAreaChips();
+      });
+      chip.appendChild(remove);
+      list.appendChild(chip);
+    });
+    refreshOpenAccordionHeight(document.querySelector('.accordion-section[data-accordion="service-area"]'));
+  }
+
+  // Splits on commas so a pasted "78701, 78702, Round Rock" adds three
+  // chips; duplicates (case-insensitive) are skipped rather than doubled.
+  function addServiceAreaEntries(raw) {
+    var added = false;
+    raw.split(',').forEach(function (part) {
+      var value = part.trim();
+      if (!value) return;
+      var exists = businessDraft.serviceArea.some(function (v) { return v.toLowerCase() === value.toLowerCase(); });
+      if (!exists) {
+        businessDraft.serviceArea.push(value);
+        added = true;
+      }
+    });
+    if (added) {
+      markGeneralDirty();
+      renderServiceAreaChips();
+    }
+  }
+
+  serviceAreaInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addServiceAreaEntries(serviceAreaInput.value);
+      serviceAreaInput.value = '';
+    } else if (e.key === 'Backspace' && !serviceAreaInput.value && businessDraft.serviceArea.length) {
+      businessDraft.serviceArea.pop();
+      markGeneralDirty();
+      renderServiceAreaChips();
+    }
+  });
+  serviceAreaInput.addEventListener('blur', function () {
+    addServiceAreaEntries(serviceAreaInput.value);
+    serviceAreaInput.value = '';
+  });
+  document.getElementById('service-area-input-wrap').addEventListener('click', function (e) {
+    if (e.target === this) serviceAreaInput.focus();
+  });
+  renderServiceAreaChips();
+
+  var durationSelect = document.getElementById('biz-default-duration');
+  durationSelect.innerHTML = APPOINTMENT_DURATION_OPTIONS.map(function (opt) {
+    return '<option value="' + opt.minutes + '">' + opt.label + '</option>';
+  }).join('');
+  durationSelect.value = String(businessDraft.defaultAppointmentMinutes);
+  durationSelect.addEventListener('change', function () {
+    businessDraft.defaultAppointmentMinutes = parseInt(durationSelect.value, 10);
+    markGeneralDirty();
+  });
+
+  document.getElementById('general-save-btn').addEventListener('click', function () {
+    // Anything typed into the service-area box but not yet turned into a
+    // chip still counts — Save shouldn't silently drop it.
+    addServiceAreaEntries(serviceAreaInput.value);
+    serviceAreaInput.value = '';
+    setBusinessSettings(businessDraft);
+    businessDraft = getBusinessSettings();
+    generalSaveConfirm.hidden = false;
+    setTimeout(function () { generalSaveConfirm.hidden = true; }, 2500);
+  });
+
+  // --- General tab: Data Export ---
+  // Builds three CSVs entirely in the browser from the same JOBS/CONTACTS/
+  // estimate data every page reads (seed data with every saved edit already
+  // applied by js/data.js) — nothing leaves the machine except as the files
+  // the browser saves.
+  function csvCell(value) {
+    if (value === null || value === undefined) return '';
+    var str = String(value);
+    // A text cell starting with = + - @ would be run as a formula by Excel/
+    // Sheets; a leading apostrophe keeps it plain text. Real numbers (a
+    // negative amount, say) are left alone.
+    if (/^[=+\-@]/.test(str) && !/^-?\d+(\.\d+)?$/.test(str)) str = "'" + str;
+    return /[",\r\n]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+  }
+
+  function buildCsv(header, rows) {
+    return [header].concat(rows).map(function (row) { return row.map(csvCell).join(','); }).join('\r\n') + '\r\n';
+  }
+
+  function contactsCsv() {
+    return buildCsv(
+      ['Name', 'Phone', 'Email', 'Address', 'Preferred Contact', 'Source', 'Sales Rep', 'Job Count'],
+      CONTACTS.map(function (c) {
+        return [c.full_name, c.phone, c.email, c.address, c.preferred_contact, c.source, c.sales_rep, getJobsForContact(c.id).length];
+      })
+    );
+  }
+
+  function jobsSortedByNumber() {
+    return JOBS.slice().sort(function (a, b) { return a.job_number - b.job_number; });
+  }
+
+  function jobsCsv() {
+    return buildCsv(
+      ['Job Number', 'Contact Name', 'Job Type', 'Appointment Type', 'Status', 'Urgency', 'Assigned To', 'Sales Rep',
+        'Appointment Date', 'Start Time', 'End Time', 'Location', 'Quote Amount', 'Intake Notes'],
+      jobsSortedByNumber().map(function (job) {
+        var contact = getContact(job.contact_id);
+        var appt = getAppointmentForJob(job.id);
+        return [
+          job.job_number, contact ? contact.full_name : '', job.job_type, job.appointment_type, job.status, job.urgency,
+          job.assigned_to, job.sales_rep,
+          appt && appt.start_time ? appt.start_time.slice(0, 10) : '',
+          appt && appt.start_time ? appt.start_time.slice(11, 16) : '',
+          appt && appt.end_time ? appt.end_time.slice(11, 16) : '',
+          job.job_location, job.quote_amount, job.intake_notes,
+        ];
+      })
+    );
+  }
+
+  // One row per line item. An estimate with no line items still gets one
+  // row (item columns blank) so it isn't silently left out of the export.
+  function estimatesCsv() {
+    var rows = [];
+    jobsSortedByNumber().forEach(function (job) {
+      getEstimatesForJob(job.id).forEach(function (est) {
+        var items = est.lineItems || [];
+        if (!items.length) {
+          rows.push([job.job_number, est.name, '', '', '', '', '']);
+          return;
+        }
+        items.forEach(function (li) {
+          var qty = Number(li.quantity) || 0;
+          var price = Number(li.price) || 0;
+          rows.push([job.job_number, est.name, li.name, li.description, qty, price.toFixed(2), (qty * price).toFixed(2)]);
+        });
+      });
+    });
+    return buildCsv(['Job Number', 'Estimate Name', 'Item Name', 'Description', 'Quantity', 'Price', 'Line Total'], rows);
+  }
+
+  function downloadCsv(filename, csv) {
+    // Leading BOM so Excel opens the file as UTF-8 (names like "Café" or
+    // the "—" in intake notes stay intact).
+    var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  document.getElementById('data-export-btn').addEventListener('click', function () {
+    var files = [
+      ['contacts.csv', contactsCsv()],
+      ['jobs.csv', jobsCsv()],
+      ['estimates.csv', estimatesCsv()],
+    ];
+    // Spaced out slightly — some browsers drop back-to-back downloads
+    // triggered by the same click.
+    files.forEach(function (file, i) {
+      setTimeout(function () { downloadCsv(file[0], file[1]); }, i * 300);
+    });
+    var confirmEl = document.getElementById('data-export-confirm');
+    confirmEl.hidden = false;
+    setTimeout(function () { confirmEl.hidden = true; }, 3000);
+  });
+
+  // --- Pipeline & Labels tab ---
+  // One reusable editor (renderLabelEditor) drives all four lists. Unlike
+  // General, every change here applies immediately via setLabels() /
+  // renameLabel() (js/labels.js, js/data.js) — same "saves as you go" rule
+  // as Features — since the whole point is that a rename or reorder shows
+  // up everywhere right away.
+  var labelEditorMessages = {};
+
+  // Automation conditions store label names too, so they follow a rename
+  // (and drop a deleted value) the same way jobs do.
+  var AUTOMATION_CONDITION_KEYS = { status: 'status', job_type: 'jobType', appointment_type: 'appointmentType' };
+
+  function updateAutomationConditionValues(kind, oldName, newName) {
+    var key = AUTOMATION_CONDITION_KEYS[kind];
+    if (!key) return;
+    var rules = getAutomations();
+    var changed = false;
+    rules.forEach(function (rule) {
+      var values = rule.conditions && rule.conditions[key];
+      if (!values || values.indexOf(oldName) === -1) return;
+      rule.conditions[key] = newName === null
+        ? values.filter(function (v) { return v !== oldName; })
+        : values.map(function (v) { return v === oldName ? newName : v; });
+      changed = true;
+    });
+    if (changed) setAutomations(rules);
+  }
+
+  function labelUsageMessage(count) {
+    return count + (count === 1 ? ' job is' : ' jobs are') + ' using this — reassign ' + (count === 1 ? 'it' : 'them') + ' first.';
+  }
+
+  // Stages whose id carries app behavior (see statusNameForRole in
+  // js/labels.js) can be renamed and moved, but not deleted.
+  var PROTECTED_STAGE_IDS = { lead: 'new leads land here (and in Review)', completed: 'it triggers materials deduction from Inventory' };
+
+  // Color popover for Job Type / Appointment Type / Urgency entries: the
+  // same LABEL_PALETTE shades "+ Add" auto-assigns from, plus a native
+  // custom-color input. Every pick saves straight through setLabels(), which
+  // re-injects the .lbl-* badge rules — so the swatch, and every tag of
+  // that value on this page, recolors in place with no re-render. Fixed-
+  // positioned (like the app's picker menus) so the accordion body's
+  // overflow:hidden can't clip it.
+  var labelColorPopover = null;
+
+  function closeLabelColorPopover() {
+    if (!labelColorPopover) return;
+    labelColorPopover.remove();
+    labelColorPopover = null;
+  }
+  document.addEventListener('click', closeLabelColorPopover);
+  document.addEventListener('scroll', closeLabelColorPopover, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLabelColorPopover();
+  });
+
+  function saveLabelColor(kind, id, hex) {
+    var list = getLabels(kind);
+    var entry = list.find(function (e) { return e.id === id; });
+    if (!entry || entry.color.toLowerCase() === hex.toLowerCase()) return;
+    entry.color = hex.toUpperCase();
+    setLabels(kind, list);
+  }
+
+  function openLabelColorPopover(kind, id, anchor) {
+    var wasOpenFor = labelColorPopover && labelColorPopover.getAttribute('data-for') === kind + ':' + id;
+    closeLabelColorPopover();
+    if (wasOpenFor) return;
+
+    var entry = getLabels(kind).find(function (e) { return e.id === id; });
+    if (!entry) return;
+
+    var pop = document.createElement('div');
+    pop.className = 'label-color-popover';
+    pop.setAttribute('data-for', kind + ':' + id);
+    pop.addEventListener('click', function (e) { e.stopPropagation(); });
+
+    function markActive(hex) {
+      pop.querySelectorAll('.swatch-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-hex').toLowerCase() === hex.toLowerCase());
+      });
+    }
+
+    var swatches = document.createElement('div');
+    swatches.className = 'swatch-row';
+    LABEL_PALETTE.forEach(function (hex) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'swatch-btn';
+      btn.style.backgroundColor = hex;
+      btn.title = hex;
+      btn.setAttribute('data-hex', hex);
+      btn.setAttribute('aria-label', 'Use ' + hex);
+      btn.addEventListener('click', function () {
+        saveLabelColor(kind, id, hex);
+        closeLabelColorPopover();
+      });
+      swatches.appendChild(btn);
+    });
+    pop.appendChild(swatches);
+
+    var customRow = document.createElement('label');
+    customRow.className = 'label-color-custom';
+    var customInput = document.createElement('input');
+    customInput.type = 'color';
+    customInput.className = 'color-input';
+    customInput.value = entry.color.toLowerCase();
+    customInput.addEventListener('input', function () {
+      saveLabelColor(kind, id, customInput.value);
+      markActive(customInput.value);
+    });
+    customRow.appendChild(customInput);
+    customRow.appendChild(document.createTextNode('Custom color'));
+    pop.appendChild(customRow);
+
+    markActive(entry.color);
+    document.body.appendChild(pop);
+    labelColorPopover = pop;
+
+    var rect = anchor.getBoundingClientRect();
+    var top = rect.bottom + 6;
+    if (top + pop.offsetHeight > window.innerHeight - 8) top = Math.max(8, rect.top - 6 - pop.offsetHeight);
+    pop.style.top = top + 'px';
+    pop.style.left = Math.min(rect.left, window.innerWidth - pop.offsetWidth - 8) + 'px';
+  }
+
+  function afterLabelChange(kind) {
+    renderLabelEditor(kind);
+    if (kind === 'status') renderStatusColorRows();
+  }
+
+  function renderLabelEditor(kind) {
+    var container = document.querySelector('.label-editor[data-label-kind="' + kind + '"]');
+    var list = getLabels(kind);
+    var meta = LABEL_KINDS[kind];
+    container.innerHTML = '';
+
+    list.forEach(function (entry, i) {
+      var row = document.createElement('div');
+      row.className = 'label-editor-row';
+
+      // Stage colors are edited in one place only — Design → Contact Status
+      // Colors — so a stage's swatch is display-only here. Every other
+      // list's swatch opens the color popover.
+      var dot = document.createElement(kind === 'status' ? 'span' : 'button');
+      dot.className = 'label-editor-swatch badge ' + labelBadgeClass(kind, entry.name);
+      if (kind === 'status') {
+        dot.title = 'Change stage colors in Design → Contact Status Colors';
+      } else {
+        dot.type = 'button';
+        dot.title = 'Change color';
+        dot.setAttribute('aria-label', 'Change color for ' + entry.name);
+        dot.setAttribute('aria-haspopup', 'true');
+        dot.addEventListener('click', function (e) {
+          e.stopPropagation();
+          openLabelColorPopover(kind, entry.id, dot);
+        });
+      }
+      row.appendChild(dot);
+
+      var nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.className = 'text-input label-editor-name';
+      nameInput.value = entry.name;
+      nameInput.setAttribute('aria-label', 'Rename ' + entry.name);
+      nameInput.setAttribute('data-label-id', entry.id);
+      function commitRename() {
+        if (nameInput.value.trim() === entry.name) {
+          nameInput.value = entry.name;
+          return;
+        }
+        var oldName = entry.name;
+        var error = renameLabel(kind, entry.id, nameInput.value);
+        if (error) {
+          labelEditorMessages[kind] = error;
+          nameInput.value = entry.name;
+          renderLabelEditor(kind);
+          return;
+        }
+        labelEditorMessages[kind] = null;
+        updateAutomationConditionValues(kind, oldName, nameInput.value.trim());
+        afterLabelChange(kind);
+      }
+      nameInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); nameInput.blur(); }
+        if (e.key === 'Escape') { nameInput.value = entry.name; nameInput.blur(); }
+      });
+      nameInput.addEventListener('change', commitRename);
+      row.appendChild(nameInput);
+
+      var usage = jobsUsingLabel(kind, entry.name).length;
+      var usageEl = document.createElement('span');
+      usageEl.className = 'label-editor-usage';
+      usageEl.textContent = usage + (usage === 1 ? ' job' : ' jobs');
+      row.appendChild(usageEl);
+
+      function iconButton(cls, text, label, disabled, onClick) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'label-editor-btn ' + cls;
+        btn.textContent = text;
+        btn.setAttribute('aria-label', label);
+        btn.title = label;
+        btn.disabled = disabled;
+        btn.addEventListener('click', onClick);
+        return btn;
+      }
+
+      function move(delta) {
+        var next = getLabels(kind);
+        var moved = next.splice(i, 1)[0];
+        next.splice(i + delta, 0, moved);
+        setLabels(kind, next);
+        labelEditorMessages[kind] = null;
+        afterLabelChange(kind);
+      }
+
+      row.appendChild(iconButton('label-editor-up', '↑', 'Move ' + entry.name + ' up', i === 0, function () { move(-1); }));
+      row.appendChild(iconButton('label-editor-down', '↓', 'Move ' + entry.name + ' down', i === list.length - 1, function () { move(1); }));
+      row.appendChild(iconButton('label-editor-delete', '×', 'Delete ' + entry.name, false, function () {
+        var inUse = jobsUsingLabel(kind, entry.name).length;
+        if (inUse > 0) {
+          labelEditorMessages[kind] = '"' + entry.name + '": ' + labelUsageMessage(inUse);
+        } else if (kind === 'status' && PROTECTED_STAGE_IDS[entry.id]) {
+          labelEditorMessages[kind] = '"' + entry.name + '" can be renamed or moved but not deleted — ' + PROTECTED_STAGE_IDS[entry.id] + '.';
+        } else if (list.length <= 1) {
+          labelEditorMessages[kind] = 'Keep at least one ' + meta.noun + '.';
+        } else {
+          setLabels(kind, getLabels(kind).filter(function (e) { return e.id !== entry.id; }));
+          updateAutomationConditionValues(kind, entry.name, null);
+          labelEditorMessages[kind] = null;
+        }
+        afterLabelChange(kind);
+      }));
+
+      container.appendChild(row);
+    });
+
+    var msg = document.createElement('div');
+    msg.className = 'label-editor-msg';
+    msg.setAttribute('role', 'status');
+    msg.textContent = labelEditorMessages[kind] || '';
+    msg.hidden = !labelEditorMessages[kind];
+    container.appendChild(msg);
+
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn btn-secondary label-editor-add';
+    addBtn.textContent = '+ Add';
+    addBtn.addEventListener('click', function () {
+      var current = getLabels(kind);
+      var base = 'New ' + meta.noun.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+      var name = base;
+      var n = 2;
+      var taken = function (candidate) {
+        return current.some(function (e) { return e.name.toLowerCase() === candidate.toLowerCase(); });
+      };
+      while (taken(name)) { name = base + ' ' + n++; }
+      var id = newLabelId();
+      current.push({ id: id, name: name, color: nextLabelColor(current) });
+      setLabels(kind, current);
+      labelEditorMessages[kind] = null;
+      afterLabelChange(kind);
+      var input = container.querySelector('.label-editor-name[data-label-id="' + id + '"]');
+      if (input) { input.focus(); input.select(); }
+    });
+    container.appendChild(addBtn);
+
+    refreshOpenAccordionHeight(container.closest('.accordion-section'));
+  }
+
+  function renderAllLabelEditors() {
+    Object.keys(LABEL_KINDS).forEach(renderLabelEditor);
+  }
+  renderAllLabelEditors();
 
   // --- Notifications tab ---
   // Unlike Features (each toggle saves instantly), this tab batches
@@ -1157,10 +1702,78 @@ function setAutomations(rules) {
     document.getElementById('estimate-template-editor-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
+  // --- Estimates tab: Estimate Defaults ---
+  // Draft-then-Save like General. Each value is only ever copied onto an
+  // estimate when one is created (see the job page's Estimate tab), so
+  // saving here affects new estimates only.
+  var estDefaultTax = document.getElementById('est-default-tax');
+  var estDefaultMarkup = document.getElementById('est-default-markup');
+  var estDefaultTerms = document.getElementById('est-default-terms');
+  var estDefaultsConfirm = document.getElementById('est-defaults-save-confirm');
+
+  function loadEstimateDefaultsForm() {
+    var defaults = getEstimateDefaults();
+    estDefaultTax.value = defaults.taxRate;
+    estDefaultMarkup.value = defaults.markup;
+    estDefaultTerms.value = defaults.terms;
+  }
+  loadEstimateDefaultsForm();
+
+  [estDefaultTax, estDefaultMarkup, estDefaultTerms].forEach(function (input) {
+    input.addEventListener('input', function () { estDefaultsConfirm.hidden = true; });
+  });
+
+  document.getElementById('est-defaults-save-btn').addEventListener('click', function () {
+    setEstimateDefaults({
+      taxRate: Math.max(0, parseFloat(estDefaultTax.value) || 0),
+      markup: Math.max(0, parseFloat(estDefaultMarkup.value) || 0),
+      terms: estDefaultTerms.value.trim(),
+    });
+    loadEstimateDefaultsForm();
+    estDefaultsConfirm.hidden = false;
+    setTimeout(function () { estDefaultsConfirm.hidden = true; }, 2500);
+  });
+
+  // --- Payments tab ---
+  // Placeholder until a real payment portal is wired up: the status pill is
+  // static markup, and these two fields are only stored, never used.
+  var PAYMENT_PORTAL_STORAGE_KEY = 'foreman-payment-portal';
+  var paymentUrlInput = document.getElementById('payment-portal-url');
+  var paymentKeyInput = document.getElementById('payment-api-key');
+  var paymentConfirm = document.getElementById('payment-save-confirm');
+
+  try {
+    var storedPortal = JSON.parse(localStorage.getItem(PAYMENT_PORTAL_STORAGE_KEY));
+    if (storedPortal && typeof storedPortal === 'object') {
+      paymentUrlInput.value = storedPortal.portalUrl || '';
+      paymentKeyInput.value = storedPortal.apiKey || '';
+    }
+  } catch (e) {}
+
+  [paymentUrlInput, paymentKeyInput].forEach(function (input) {
+    input.addEventListener('input', function () { paymentConfirm.hidden = true; });
+  });
+
+  document.getElementById('payment-save-btn').addEventListener('click', function () {
+    try {
+      localStorage.setItem(PAYMENT_PORTAL_STORAGE_KEY, JSON.stringify({
+        portalUrl: paymentUrlInput.value.trim(),
+        apiKey: paymentKeyInput.value.trim(),
+      }));
+    } catch (e) {}
+    paymentConfirm.hidden = false;
+    setTimeout(function () { paymentConfirm.hidden = true; }, 2500);
+  });
+
   saveBtn.addEventListener('click', function () {
     theme.saveAccent(current);
     theme.saveTechColors(techColors);
-    theme.saveStatusColors(statusColors);
+    var stages = getLabels('status');
+    stages.forEach(function (stage) {
+      if (statusColorDraft[stage.id]) stage.color = statusColorDraft[stage.id];
+    });
+    setLabels('status', stages);
+    statusColorDraft = {};
     setBrand({
       name: brandDraft.name || DEFAULT_BRAND_NAME,
       logo: brandDraft.logo,

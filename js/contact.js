@@ -60,9 +60,9 @@ function renderJobsIndex(jobs) {
         <div class="schedule-title">Job #${job.job_number} — ${job.service_type}</div>
         <div class="schedule-meta">${formatDateOnly(job.date)}</div>
       </div>
-      <span class="badge ${jobTypeBadgeClass()}">${job.job_type}</span>
-      <span class="badge ${appointmentTypeBadgeClass()}">${job.appointment_type}</span>
-      <span class="badge ${statusBadgeClass(job.status)}">${job.status}</span>
+      <span class="badge ${jobTypeBadgeClass(job.job_type)}">${escapeHtml(job.job_type)}</span>
+      <span class="badge ${appointmentTypeBadgeClass(job.appointment_type)}">${escapeHtml(job.appointment_type)}</span>
+      <span class="badge ${statusBadgeClass(job.status)}">${escapeHtml(job.status)}</span>
       ${chevronIcon()}
     </a>
   `).join("");
@@ -210,7 +210,7 @@ function renderJobInfoCard(job) {
     let cls = "pipeline-step";
     if (i < currentIndex) cls += " done";
     if (i === currentIndex) cls += " current";
-    return `<button type="button" class="${cls}" data-status="${step}">${step}</button>`;
+    return `<button type="button" class="${cls}" data-status="${escapeHtml(step)}">${escapeHtml(step)}</button>`;
   }).join("");
 
   // Clicking a step writes through the same shared status store the Boards
@@ -309,6 +309,18 @@ function renderJobInfoCardEditor(job) {
       <button type="button" class="btn btn-secondary" id="cancel-job-btn">Cancel</button>
     </div>
   `;
+
+  // Setting/changing the start time fills in the end time as start + the
+  // default appointment length (Settings → General) — but only until the
+  // owner edits the end time by hand in this Edit session; after that, the
+  // end time is theirs and a start change leaves it alone.
+  const startInput = document.getElementById("edit-appt-start");
+  const endInput = document.getElementById("edit-appt-end");
+  endInput.addEventListener("input", () => { draft.appt_end_touched = true; });
+  startInput.addEventListener("input", () => {
+    if (draft.appt_end_touched || !startInput.value) return;
+    endInput.value = addMinutesToTime(startInput.value, getBusinessSettings().defaultAppointmentMinutes);
+  });
 
   document.getElementById("save-job-btn").addEventListener("click", () => {
     const quoteRaw = document.getElementById("edit-quote-amount").value.trim();
@@ -701,6 +713,10 @@ function estimateTemplateChooserHtml(templates, showCancel) {
       <button type="button" class="btn btn-primary" id="estimate-start-btn">Start Estimate</button>
       ${showCancel ? `<button type="button" class="btn btn-secondary" id="estimate-chooser-cancel-btn">Cancel</button>` : ""}
     </div>
+    <label class="estimate-markup-option" id="estimate-markup-option" hidden>
+      <input type="checkbox" id="estimate-markup-checkbox">
+      Apply default markup (${getEstimateDefaults().markup}%)
+    </label>
   `;
 }
 
@@ -719,7 +735,7 @@ function renderEstimateList(job) {
         <a class="doc-row estimate-list-row" href="#" data-estimate-id="${e.id}">
           <div class="doc-body">
             <div class="doc-name">${escapeHtml(e.name)}</div>
-            <div class="doc-meta">${e.lineItems.length} item${e.lineItems.length === 1 ? "" : "s"} · ${formatMoney(estimateLineItemsTotal(e.lineItems))}</div>
+            <div class="doc-meta">${e.lineItems.length} item${e.lineItems.length === 1 ? "" : "s"} · ${formatMoneyCents(estimateTotals(e).total)}</div>
           </div>
           <button type="button" class="materials-remove estimate-delete-btn" data-estimate-id="${e.id}" aria-label="Delete estimate">&times;</button>
         </a>
@@ -760,14 +776,29 @@ function renderEstimateList(job) {
     // Matched by id, not name — the dropdown's own option values are each
     // template's real id (set where the <option> tags are built above), so
     // this is exactly the same id the templates array itself is keyed by.
+    // The markup option only means something when copying from a template
+    // — a blank estimate has no prices to scale — so it shows only then.
+    const templateSelect = document.getElementById("estimate-template-select");
+    const markupOption = document.getElementById("estimate-markup-option");
+    const syncMarkupOption = () => { markupOption.hidden = !templateSelect.value; };
+    templateSelect.addEventListener("change", syncMarkupOption);
+    syncMarkupOption();
+
     document.getElementById("estimate-start-btn").addEventListener("click", () => {
-      const templateId = document.getElementById("estimate-template-select").value || null;
+      const templateId = templateSelect.value || null;
+      const defaults = getEstimateDefaults();
+      const applyMarkup = !!templateId && document.getElementById("estimate-markup-checkbox").checked;
       estimateChooserOpen = false;
+      // Tax rate and terms are copied from Settings → Estimates right now,
+      // at creation — later changes to those defaults never reach this
+      // estimate. Markup is baked into the copied prices the same way.
       draftEstimate = {
         id: null,
         name: "",
-        lineItems: estimateLineItemsFromTemplate(templateId),
+        lineItems: estimateLineItemsFromTemplate(templateId, applyMarkup ? defaults.markup : 0),
         started_from_template_id: templateId,
+        tax_rate: defaults.taxRate,
+        terms: defaults.terms,
       };
       renderEstimatePanel(job);
     });
@@ -812,7 +843,20 @@ function renderEstimateEditor(job, estimate, isNew) {
       ${estimate.lineItems.map(estimateLineItemRowHtml).join("")}
     </div>
     <button type="button" class="btn btn-secondary" id="job-estimate-add-line-btn">+ Add Line Item</button>
-    <div class="estimate-total-row"><span>Estimate Total</span><span id="job-estimate-total">${formatMoney(estimateLineItemsTotal(estimate.lineItems))}</span></div>
+    <div class="estimate-summary">
+      <div class="estimate-summary-row"><span>Subtotal</span><span id="job-estimate-subtotal"></span></div>
+      <div class="estimate-summary-row">
+        <span class="estimate-tax-label">Tax
+          <input type="number" class="text-input estimate-tax-input" id="job-estimate-tax-rate" min="0" step="0.01" value="${Number(estimate.tax_rate) || 0}" aria-label="Tax rate percent">%
+        </span>
+        <span id="job-estimate-tax"></span>
+      </div>
+    </div>
+    <div class="estimate-total-row"><span>Estimate Total</span><span id="job-estimate-total"></span></div>
+    <div class="estimate-terms-field">
+      <label class="info-label" for="job-estimate-terms">Terms &amp; Conditions</label>
+      <textarea class="text-input" id="job-estimate-terms" rows="4" placeholder="No terms on this estimate.">${escapeHtml(estimate.terms || "")}</textarea>
+    </div>
     <div class="btn-row" style="margin-top:16px;">
       <button type="button" class="btn btn-primary" id="job-estimate-save-btn">Save Estimate</button>
       ${isNew ? `<button type="button" class="btn btn-secondary" id="job-estimate-discard-btn">Cancel</button>` : ""}
@@ -839,12 +883,28 @@ function renderEstimateEditor(job, estimate, isNew) {
     document.getElementById("job-estimate-save-confirm").hidden = true;
   });
 
-  const totalEl = document.getElementById("job-estimate-total");
   const saveConfirmEl = document.getElementById("job-estimate-save-confirm");
+  const renderTotals = () => {
+    const totals = estimateTotals(estimate);
+    document.getElementById("job-estimate-subtotal").textContent = formatMoneyCents(totals.subtotal);
+    document.getElementById("job-estimate-tax").textContent = formatMoneyCents(totals.tax);
+    document.getElementById("job-estimate-total").textContent = formatMoneyCents(totals.total);
+  };
   const updateTotal = () => {
-    totalEl.textContent = formatMoney(estimateLineItemsTotal(estimate.lineItems));
+    renderTotals();
     saveConfirmEl.hidden = true;
   };
+  renderTotals();
+
+  document.getElementById("job-estimate-tax-rate").addEventListener("input", e => {
+    estimate.tax_rate = Math.max(0, parseFloat(e.target.value) || 0);
+    updateTotal();
+  });
+
+  document.getElementById("job-estimate-terms").addEventListener("input", e => {
+    estimate.terms = e.target.value;
+    saveConfirmEl.hidden = true;
+  });
 
   document.querySelectorAll("#job-estimate-line-items .estimate-line-item-row").forEach(row => {
     const li = estimate.lineItems.find(l => l.id === row.getAttribute("data-line-id"));

@@ -46,10 +46,10 @@ function renderColumn(status) {
   return `
     <div class="board-column">
       <div class="board-column-header">
-        <div class="board-column-name">${status}</div>
+        <div class="board-column-name">${escapeHtml(status)}</div>
         <span class="board-column-count">${jobs.length}</span>
       </div>
-      <div class="board-column-body" data-status="${status}">
+      <div class="board-column-body" data-status="${escapeHtml(status)}">
         ${jobs.length > 0 ? jobs.map(renderCard).join("") : `<div class="empty-note">No jobs here.</div>`}
       </div>
     </div>
@@ -72,9 +72,9 @@ function renderCard(job) {
       </div>
       <div class="board-card-meta">${contact.full_name} · ${job.job_location}</div>
       <div class="board-card-badges">
-        <span class="badge ${jobTypeBadgeClass()}">${job.job_type}</span>
-        <span class="badge ${appointmentTypeBadgeClass()}">${job.appointment_type}</span>
-        <span class="badge ${urgencyBadgeClass(job.urgency)}">${job.urgency}</span>
+        <span class="badge ${jobTypeBadgeClass(job.job_type)}">${escapeHtml(job.job_type)}</span>
+        <span class="badge ${appointmentTypeBadgeClass(job.appointment_type)}">${escapeHtml(job.appointment_type)}</span>
+        <span class="badge ${urgencyBadgeClass(job.urgency)}">${escapeHtml(job.urgency)}</span>
         ${getFeatures().salesRepTracking ? `<span class="badge ${salesRepBadgeClass(job.sales_rep)}">${job.sales_rep}</span>` : ""}
       </div>
     </div>
