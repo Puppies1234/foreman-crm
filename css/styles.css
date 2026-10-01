@@ -3225,3 +3225,8 @@ button.label-editor-swatch:focus-visible {
 .payment-sync-list .feature-toggle-label { grid-column: 1; }
 .payment-sync-list .feature-toggle-desc { grid-column: 1; }
 .payment-sync-badge { grid-column: 2; grid-row: 1 / span 2; background: var(--line); color: var(--ink-muted); box-shadow: none; text-shadow: none; }
+
+/* Pipeline & Labels: per-entry on/off switch, and a dimmed name when off. */
+.label-editor-switch { margin: 0 4px; }
+.label-editor-row.is-disabled .label-editor-name { color: var(--ink-muted); background: var(--paper); }
+.label-editor-row.is-disabled .label-editor-swatch { opacity: 0.45; }

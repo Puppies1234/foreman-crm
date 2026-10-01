@@ -4,7 +4,7 @@
 //                     Messages / Calls & Transcripts / Documents / Photos)
 // Every render function below is handed the specific job or contact it
 // should draw from — none of them reach across to a different job's data.
-document.addEventListener("DOMContentLoaded", () => {
+whenAppReady(() => {
   const params = new URLSearchParams(window.location.search);
   const jobId = params.get("job");
   const contactParam = params.get("contact");
@@ -205,8 +205,10 @@ function updateJobSubtitle(job) {
 function renderJobInfoCard(job) {
   updateJobSubtitle(job);
   const pipelineEl = document.getElementById("pipeline");
-  const currentIndex = STATUS_PIPELINE.indexOf(job.status);
-  pipelineEl.innerHTML = STATUS_PIPELINE.map((step, i) => {
+  // Enabled stages in order, plus this job's own stage if it's disabled.
+  const stages = labelOptions("status", job.status);
+  const currentIndex = stages.indexOf(job.status);
+  pipelineEl.innerHTML = stages.map((step, i) => {
     let cls = "pipeline-step";
     if (i < currentIndex) cls += " done";
     if (i === currentIndex) cls += " current";
@@ -217,7 +219,7 @@ function renderJobInfoCard(job) {
   // page drags into — re-rendering this card is enough to reflect it here.
   pipelineEl.querySelectorAll(".pipeline-step").forEach(btn => {
     btn.addEventListener("click", () => {
-      setJobStatus(job.id, btn.getAttribute("data-status"));
+      setJobStatus(job.id, btn.getAttribute("data-status")).then(r => { if (r.error) renderJobInfoCard(job); });
       renderJobInfoCard(job);
     });
   });
@@ -263,7 +265,7 @@ function renderJobInfoCard(job) {
   const appt = getAppointmentForJob(job.id);
   const apptEl = document.getElementById("appt-summary");
   if (appt) {
-    apptEl.innerHTML = `${formatDateTime(appt.start_time)} – ${formatTime(appt.end_time)} with ${job.assigned_to} · <span class="badge ${appt.status === "Confirmed" ? "badge-scheduled" : "badge-qualified"}">${appt.status}</span>`;
+    apptEl.innerHTML = `${formatDateTime(appt.start_time)} – ${formatTime(appt.end_time)} with ${job.assigned_to} · <span class="badge ${appointmentStatusBadgeClass(appt.status)}">${appt.status}</span>`;
   } else {
     apptEl.innerHTML = `<span class="empty-note">Not yet scheduled.</span>`;
   }
@@ -325,23 +327,23 @@ function renderJobInfoCardEditor(job) {
   document.getElementById("save-job-btn").addEventListener("click", () => {
     const quoteRaw = document.getElementById("edit-quote-amount").value.trim();
 
-    setJobDetails(job.id, {
-      job_location: document.getElementById("edit-job-location").value.trim(),
-      quote_amount: quoteRaw === "" ? null : Number(quoteRaw),
-      intake_notes: document.getElementById("edit-intake-notes").value.trim(),
-    });
-
     // Only commit a time change if all three pieces are present — a
     // half-filled date/time isn't a valid appointment to save.
     const date = document.getElementById("edit-appt-date").value;
     const start = document.getElementById("edit-appt-start").value;
     const end = document.getElementById("edit-appt-end").value;
-    if (date && start && end) {
-      setAppointmentTime(job.id, `${date}T${start}`, `${date}T${end}`);
-    }
+
+    // One save to Supabase for everything in the form. It shows at once;
+    // if Supabase rejects it the job is rolled back and this re-renders.
+    const saved = setJobDetails(job.id, {
+      job_location: document.getElementById("edit-job-location").value.trim(),
+      quote_amount: quoteRaw === "" ? null : Number(quoteRaw),
+      intake_notes: document.getElementById("edit-intake-notes").value.trim(),
+    }, date && start && end ? { date, start, end } : null);
 
     jobEditDraft = null;
     renderJobInfoCard(job);
+    saved.then(r => { if (r.error) renderJobInfoCard(job); });
   });
 
   document.getElementById("cancel-job-btn").addEventListener("click", () => {
@@ -1031,6 +1033,16 @@ function renderContactCard(contact, elId, opts) {
   }
 }
 
+function customFieldRowHtml(field) {
+  return `
+    <div class="custom-field-row">
+      <input type="text" class="text-input custom-field-label" placeholder="Label" value="${escapeHtml(field.label)}">
+      <input type="text" class="text-input custom-field-value" placeholder="Value" value="${escapeHtml(field.value)}">
+      <button type="button" class="custom-field-remove" aria-label="Remove field">&times;</button>
+    </div>
+  `;
+}
+
 function renderContactCardEditor(contact, elId, options) {
   const el = document.getElementById(elId);
   const draft = contactEditDraft;
@@ -1076,13 +1088,7 @@ function renderContactCardEditor(contact, elId, options) {
 
     <div class="card-eyebrow" style="margin-top:16px;">Custom Fields</div>
     <div id="custom-fields-editor">
-      ${draft.custom_fields.map((f, i) => `
-        <div class="custom-field-row" data-index="${i}">
-          <input type="text" class="text-input custom-field-label" placeholder="Label" value="${escapeHtml(f.label)}">
-          <input type="text" class="text-input custom-field-value" placeholder="Value" value="${escapeHtml(f.value)}">
-          <button type="button" class="custom-field-remove" data-index="${i}" aria-label="Remove field">&times;</button>
-        </div>
-      `).join("")}
+      ${draft.custom_fields.map(customFieldRowHtml).join("")}
     </div>
     <button type="button" class="btn btn-secondary" id="add-custom-field-btn">+ Add Custom Field</button>
 
@@ -1096,19 +1102,20 @@ function renderContactCardEditor(contact, elId, options) {
     el.querySelector("#source-custom-field").hidden = e.target.value !== "Other";
   });
 
-  // Typing doesn't touch the draft object directly — Save reads the DOM
-  // once at commit time, same as every other form in this app. Add/remove
-  // re-render immediately since the row list itself changes.
-  el.querySelector("#add-custom-field-btn").addEventListener("click", () => {
-    draft.custom_fields.push({ label: "", value: "" });
-    renderContactCardEditor(contact, elId, options);
+  // While editing, the form itself holds every in-progress value — Save
+  // reads the DOM once at commit time, same as every other form in this
+  // app. So adding or removing a custom field only touches that one row in
+  // #custom-fields-editor and never redraws the form: re-rendering from
+  // `draft` would throw away anything typed since Edit was clicked.
+  const customFieldsEditor = el.querySelector("#custom-fields-editor");
+  customFieldsEditor.addEventListener("click", e => {
+    const removeBtn = e.target.closest(".custom-field-remove");
+    if (removeBtn) removeBtn.closest(".custom-field-row").remove();
   });
 
-  el.querySelectorAll(".custom-field-remove").forEach(btn => {
-    btn.addEventListener("click", () => {
-      draft.custom_fields.splice(parseInt(btn.getAttribute("data-index"), 10), 1);
-      renderContactCardEditor(contact, elId, options);
-    });
+  el.querySelector("#add-custom-field-btn").addEventListener("click", () => {
+    customFieldsEditor.insertAdjacentHTML("beforeend", customFieldRowHtml({ label: "", value: "" }));
+    customFieldsEditor.lastElementChild.querySelector(".custom-field-label").focus();
   });
 
   el.querySelector("#save-contact-btn").addEventListener("click", () => {
@@ -1122,7 +1129,7 @@ function renderContactCardEditor(contact, elId, options) {
       ? (el.querySelector("#edit-contact-source-custom").value.trim() || "Other")
       : sourceSelected;
 
-    setContactDetails(contact.id, {
+    const saved = setContactDetails(contact.id, {
       phone: el.querySelector("#edit-contact-phone").value.trim(),
       email: el.querySelector("#edit-contact-email").value.trim(),
       address: el.querySelector("#edit-contact-address").value.trim(),
@@ -1131,8 +1138,14 @@ function renderContactCardEditor(contact, elId, options) {
       custom_fields: customFields,
     });
     contactEditDraft = null;
-    if (options.onChange) options.onChange();
-    else renderContactCard(contact, elId, options);
+    const rerender = () => {
+      if (options.onChange) options.onChange();
+      else renderContactCard(contact, elId, options);
+    };
+    rerender();
+    // The change shows immediately; if Supabase rejects it, the contact is
+    // rolled back (js/contacts-store.js) and this re-renders the real values.
+    saved.then(r => { if (r.error) rerender(); });
   });
 
   el.querySelector("#cancel-contact-btn").addEventListener("click", () => {

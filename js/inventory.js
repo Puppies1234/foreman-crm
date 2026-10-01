@@ -10,7 +10,7 @@ const PACKAGE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 let inventoryEditingId = null;
 let inventoryAddingNew = false;
 
-document.addEventListener("DOMContentLoaded", () => {
+whenAppReady(() => {
   document.getElementById("add-item-btn").addEventListener("click", () => {
     if (inventoryAddingNew) return;
     inventoryAddingNew = true;

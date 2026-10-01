@@ -76,7 +76,7 @@ function setAutomations(rules) {
   } catch (e) {}
 }
 
-(function () {
+whenAppReady(function () {
   var theme = window.ForemanTheme;
   var current = Object.assign({}, theme.getAccent());
 
@@ -838,10 +838,20 @@ function setAutomations(rules) {
   // --- Pipeline & Labels tab ---
   // One reusable editor (renderLabelEditor) drives all four lists. Unlike
   // General, every change here applies immediately via setLabels() /
-  // renameLabel() (js/labels.js, js/data.js) — same "saves as you go" rule
-  // as Features — since the whole point is that a rename or reorder shows
-  // up everywhere right away.
+  // renameLabel() (js/labels.js, js/data.js), which save straight to
+  // Supabase — same "saves as you go" rule as Features — since the whole
+  // point is that a rename or reorder shows up everywhere right away.
   var labelEditorMessages = {};
+
+  // Saves a changed list. The editor re-renders right away from the new
+  // list; if Supabase then rejects the save, setLabels() has already
+  // re-read the real lists, so re-render once more to show them.
+  function persistLabels(kind, list) {
+    return setLabels(kind, list).then(function (result) {
+      if (result.error) afterLabelChange(kind);
+      return result;
+    });
+  }
 
   // Automation conditions store label names too, so they follow a rename
   // (and drop a deleted value) the same way jobs do.
@@ -867,9 +877,14 @@ function setAutomations(rules) {
     return count + (count === 1 ? ' job is' : ' jobs are') + ' using this — reassign ' + (count === 1 ? 'it' : 'them') + ' first.';
   }
 
-  // Stages whose id carries app behavior (see statusNameForRole in
-  // js/labels.js) can be renamed and moved, but not deleted.
-  var PROTECTED_STAGE_IDS = { lead: 'new leads land here (and in Review)', completed: 'it triggers materials deduction from Inventory' };
+  // Protected stages carry app behavior (see statusNameForRole in
+  // js/labels.js): they can be renamed, moved and recolored, but not
+  // deleted or disabled.
+  function protectedStageReason(entry) {
+    return entry.name === statusNameForRole('lead')
+      ? 'new leads land here (and in Review)'
+      : 'it triggers materials deduction from Inventory';
+  }
 
   // Color popover for Job Type / Appointment Type / Urgency entries: the
   // same LABEL_PALETTE shades "+ Add" auto-assigns from, plus a native
@@ -896,7 +911,17 @@ function setAutomations(rules) {
     var entry = list.find(function (e) { return e.id === id; });
     if (!entry || entry.color.toLowerCase() === hex.toLowerCase()) return;
     entry.color = hex.toUpperCase();
-    setLabels(kind, list);
+    persistLabels(kind, list);
+  }
+
+  // Dragging around the native color picker fires 'input' many times a
+  // second — those only preview the color on this page; the one save to
+  // Supabase happens on 'change', when the picker closes.
+  function previewLabelColor(kind, id, hex) {
+    var entry = LABELS_CACHE[kind].find(function (e) { return e.id === id; });
+    if (!entry) return;
+    entry.color = hex.toUpperCase();
+    applyLabels();
   }
 
   function openLabelColorPopover(kind, id, anchor) {
@@ -942,9 +967,18 @@ function setAutomations(rules) {
     customInput.type = 'color';
     customInput.className = 'color-input';
     customInput.value = entry.color.toLowerCase();
+    var savedColor = entry.color;
     customInput.addEventListener('input', function () {
-      saveLabelColor(kind, id, customInput.value);
+      previewLabelColor(kind, id, customInput.value);
       markActive(customInput.value);
+    });
+    customInput.addEventListener('change', function () {
+      // previewLabelColor already put the new color in the cache, so compare
+      // against the color this popover opened with to decide whether to save.
+      if (customInput.value.toLowerCase() === savedColor.toLowerCase()) return;
+      var list = getLabels(kind);
+      persistLabels(kind, list);
+      savedColor = customInput.value;
     });
     customRow.appendChild(customInput);
     customRow.appendChild(document.createTextNode('Custom color'));
@@ -1007,16 +1041,17 @@ function setAutomations(rules) {
           return;
         }
         var oldName = entry.name;
-        var error = renameLabel(kind, entry.id, nameInput.value);
-        if (error) {
-          labelEditorMessages[kind] = error;
-          nameInput.value = entry.name;
-          renderLabelEditor(kind);
-          return;
-        }
-        labelEditorMessages[kind] = null;
-        updateAutomationConditionValues(kind, oldName, nameInput.value.trim());
-        afterLabelChange(kind);
+        var newName = nameInput.value.trim();
+        renameLabel(kind, entry.id, nameInput.value).then(function (error) {
+          if (error) {
+            labelEditorMessages[kind] = error;
+            afterLabelChange(kind);
+            return;
+          }
+          labelEditorMessages[kind] = null;
+          updateAutomationConditionValues(kind, oldName, newName);
+          afterLabelChange(kind);
+        });
       }
       nameInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); nameInput.blur(); }
@@ -1030,6 +1065,29 @@ function setAutomations(rules) {
       usageEl.className = 'label-editor-usage';
       usageEl.textContent = usage + (usage === 1 ? ' job' : ' jobs');
       row.appendChild(usageEl);
+
+      // Enabled = offered as a choice in dropdowns, status pills and Boards
+      // columns. Disabling never touches a job already set to this value —
+      // it keeps showing it, and can still be moved off it.
+      row.classList.toggle('is-disabled', !entry.enabled);
+      var enabledSwitch = buildSwitch(entry.enabled, function (checked) {
+        var next = getLabels(kind);
+        var target = next.find(function (e) { return e.id === entry.id; });
+        if (!checked && entry.protected) {
+          labelEditorMessages[kind] = '"' + entry.name + '" can\'t be turned off — ' + protectedStageReason(entry) + '.';
+        } else if (!checked && next.filter(function (e) { return e.enabled; }).length <= 1) {
+          labelEditorMessages[kind] = 'Keep at least one ' + meta.noun + ' turned on.';
+        } else {
+          target.enabled = checked;
+          persistLabels(kind, next);
+          labelEditorMessages[kind] = null;
+        }
+        afterLabelChange(kind);
+      });
+      enabledSwitch.classList.add('label-editor-switch');
+      enabledSwitch.title = entry.enabled ? 'Shown as a choice — click to hide' : 'Hidden from choices — click to show';
+      enabledSwitch.querySelector('input').setAttribute('aria-label', 'Offer ' + entry.name + ' as a choice');
+      row.appendChild(enabledSwitch);
 
       function iconButton(cls, text, label, disabled, onClick) {
         var btn = document.createElement('button');
@@ -1047,7 +1105,7 @@ function setAutomations(rules) {
         var next = getLabels(kind);
         var moved = next.splice(i, 1)[0];
         next.splice(i + delta, 0, moved);
-        setLabels(kind, next);
+        persistLabels(kind, next);
         labelEditorMessages[kind] = null;
         afterLabelChange(kind);
       }
@@ -1058,12 +1116,14 @@ function setAutomations(rules) {
         var inUse = jobsUsingLabel(kind, entry.name).length;
         if (inUse > 0) {
           labelEditorMessages[kind] = '"' + entry.name + '": ' + labelUsageMessage(inUse);
-        } else if (kind === 'status' && PROTECTED_STAGE_IDS[entry.id]) {
-          labelEditorMessages[kind] = '"' + entry.name + '" can be renamed or moved but not deleted — ' + PROTECTED_STAGE_IDS[entry.id] + '.';
+        } else if (entry.protected) {
+          labelEditorMessages[kind] = '"' + entry.name + '" can be renamed or moved but not deleted — ' + protectedStageReason(entry) + '.';
         } else if (list.length <= 1) {
           labelEditorMessages[kind] = 'Keep at least one ' + meta.noun + '.';
+        } else if (entry.enabled && list.filter(function (e) { return e.enabled; }).length <= 1) {
+          labelEditorMessages[kind] = 'Keep at least one ' + meta.noun + ' turned on.';
         } else {
-          setLabels(kind, getLabels(kind).filter(function (e) { return e.id !== entry.id; }));
+          persistLabels(kind, getLabels(kind).filter(function (e) { return e.id !== entry.id; }));
           updateAutomationConditionValues(kind, entry.name, null);
           labelEditorMessages[kind] = null;
         }
@@ -1094,8 +1154,8 @@ function setAutomations(rules) {
       };
       while (taken(name)) { name = base + ' ' + n++; }
       var id = newLabelId();
-      current.push({ id: id, name: name, color: nextLabelColor(current) });
-      setLabels(kind, current);
+      current.push({ id: id, name: name, color: nextLabelColor(current), enabled: true, protected: false });
+      persistLabels(kind, current);
       labelEditorMessages[kind] = null;
       afterLabelChange(kind);
       var input = container.querySelector('.label-editor-name[data-label-id="' + id + '"]');
@@ -1772,7 +1832,7 @@ function setAutomations(rules) {
     stages.forEach(function (stage) {
       if (statusColorDraft[stage.id]) stage.color = statusColorDraft[stage.id];
     });
-    setLabels('status', stages);
+    persistLabels('status', stages);
     statusColorDraft = {};
     setBrand({
       name: brandDraft.name || DEFAULT_BRAND_NAME,
@@ -1788,4 +1848,4 @@ function setAutomations(rules) {
   });
 
   syncControls();
-})();
+});

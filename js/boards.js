@@ -1,6 +1,6 @@
-// Sales board: one column per STATUS_PIPELINE step, every job from the mock
+// Sales board: one column per pipeline stage (Settings → Pipeline & Labels), every job from the mock
 // data placed by its current status. Dragging a card to another column
-// writes through setJobStatus() (js/data.js) — the same store the job
+// writes through setJobStatus() (js/jobs-store.js) — the same store the job
 // detail page's pipeline reads and writes — then the whole board re-renders
 // from JOBS so the column counts and card positions stay in sync.
 //
@@ -11,7 +11,7 @@
 // updates that job's real status, same as an unfiltered drag.
 const boardState = { repFilter: "all" };
 
-document.addEventListener("DOMContentLoaded", () => {
+whenAppReady(() => {
   document.getElementById("board-rep-filter-group").hidden = !getFeatures().salesRepTracking;
   populateRepFilter();
   renderBoard();
@@ -30,7 +30,12 @@ function populateRepFilter() {
 
 function renderBoard() {
   const container = document.getElementById("board-columns");
-  container.innerHTML = STATUS_PIPELINE.map(renderColumn).join("");
+  // Enabled stages in order; a disabled stage still gets its column while
+  // any job is sitting in it, so no card ever disappears from the board.
+  const columns = getLabels("status")
+    .filter(stage => stage.enabled || JOBS.some(job => job.status === stage.name))
+    .map(stage => stage.name);
+  container.innerHTML = columns.map(renderColumn).join("");
   wireDragAndDrop();
 }
 
@@ -123,7 +128,7 @@ function wireDragAndDrop() {
       e.preventDefault();
       body.classList.remove("drag-over");
       const jobId = e.dataTransfer.getData("text/plain");
-      setJobStatus(jobId, body.getAttribute("data-status"));
+      setJobStatus(jobId, body.getAttribute("data-status")).then(r => { if (r.error) renderBoard(); });
       renderBoard();
     });
   });

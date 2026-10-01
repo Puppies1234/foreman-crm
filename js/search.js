@@ -3,7 +3,7 @@
 // live-filters via searchDirectory() (js/data.js) and shows a dropdown
 // grouped into "Jobs" then "Contacts" right under the input; clicking a
 // result opens that job or that contact's profile.
-document.addEventListener("DOMContentLoaded", () => {
+whenAppReady(() => {
   const input = document.getElementById("global-search-input");
   const resultsEl = document.getElementById("global-search-results");
   const clearBtn = document.getElementById("global-search-clear");
@@ -33,8 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     resultsEl.innerHTML =
-      renderSection("Jobs", jobResults, renderJobRow, q) +
-      renderSection("Contacts", contactResults, renderContactRow, q);
+      renderSection("Jobs", jobResults, renderSearchJobRow, q) +
+      renderSection("Contacts", contactResults, renderSearchContactRow, q);
   }
 
   function renderSection(label, items, rowFn, q) {
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 const JOB_RESULT_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>`;
 
-function renderJobRow({ contact, job }, q) {
+function renderSearchJobRow({ contact, job }, q) {
   return `
     <a class="result-row" href="contact.html?job=${job.id}">
       <span class="result-icon-box">${JOB_RESULT_ICON}</span>
@@ -94,7 +94,7 @@ function renderJobRow({ contact, job }, q) {
   `;
 }
 
-function renderContactRow({ contact }, q) {
+function renderSearchContactRow({ contact }, q) {
   return `
     <a class="result-row" href="contact.html?contact=${contact.id}">
       <span class="avatar avatar-sm">${initials(contact.full_name)}</span>

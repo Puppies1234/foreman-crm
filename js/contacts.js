@@ -3,7 +3,7 @@
 // not on this page.
 const contactsState = { repFilter: "all", sort: "name" };
 
-document.addEventListener("DOMContentLoaded", () => {
+whenAppReady(() => {
   document.getElementById("contacts-rep-filter-group").hidden = !getFeatures().salesRepTracking;
   populateRepFilter();
   document.getElementById("contacts-sort").addEventListener("change", e => {

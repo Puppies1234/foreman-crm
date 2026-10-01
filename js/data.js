@@ -6,7 +6,12 @@ const TODAY = "2026-09-18";
 // to be confused with, a job's own sales_rep (see JOBS below). custom_fields
 // is always an array (empty until the owner adds one from the Contact
 // card's editor) so render code never has to guard for it being undefined.
-const CONTACTS = [
+// Contacts now live in Supabase (js/contacts-store.js). This list is only the
+// original mock data — the starting point the one-time migration copies
+// into Supabase (merged with any edits saved in this browser's
+// localStorage) when the Supabase table is still empty. Nothing renders
+// from it directly.
+const LOCAL_CONTACT_SEED = [
   { id: "c1", full_name: "Marta Alvarez", phone: "(512) 555-0148", email: "marta.alvarez@gmail.com", address: "412 Willow Creek Rd, Austin, TX", preferred_contact: "Text", source: "Google", sales_rep: "Mike Reyes", custom_fields: [] },
   { id: "c2", full_name: "Denny Okafor", phone: "(512) 555-0117", email: "d.okafor@outlook.com", address: "88 Ridgeline Dr, Austin, TX", preferred_contact: "Call", source: "Referral", sales_rep: "Dana Ferris", custom_fields: [] },
   { id: "c3", full_name: "Priya Chandran", phone: "(737) 555-0192", email: "priya.chandran@yahoo.com", address: "215 Sunview Ln, Round Rock, TX", preferred_contact: "Email", source: "Website", sales_rep: "Unassigned", custom_fields: [] },
@@ -23,7 +28,12 @@ const CONTACTS = [
 // sales_rep is the person who owns the deal (quoting/closing) — a distinct
 // role from assigned_to (the field technician doing the work); a job's rep
 // and tech can be the same person or different people.
-const JOBS = [
+// Jobs now live in Supabase (js/jobs-store.js). This list, and the
+// appointments below it, are only the original mock data — the starting
+// point the one-time migration copies into Supabase (merged with any edits
+// saved in this browser's localStorage) when the Supabase table is empty.
+// Nothing renders from them directly.
+const LOCAL_JOB_SEED = [
   { id: "j1", contact_id: "c1", service_type: "Water heater replacement", job_type: "New Install", appointment_type: "Initial Appointment", urgency: "High", status: "Scheduled", assigned_to: "Ray Dunmore", sales_rep: "Dana Ferris", quote_amount: 1850, intake_notes: "No hot water since yesterday morning. Tank is original to the house, ~14 years old, visible rust at base.", job_number: 1041, date: "2026-09-17" },
   { id: "j2", contact_id: "c2", service_type: "AC not cooling", job_type: "Repair", appointment_type: "Appointment", urgency: "High", status: "Estimating", assigned_to: "Kim Osei", sales_rep: "Ray Dunmore", quote_amount: 640, intake_notes: "Upstairs unit blowing warm air, outdoor fan not spinning. Thermostat reads 82°F.", job_number: 1036, date: "2026-09-16" },
   { id: "j3", contact_id: "c3", service_type: "Panel upgrade estimate", job_type: "New Install", appointment_type: "Initial Appointment", urgency: "Low", status: "New Lead", assigned_to: "Unassigned", sales_rep: "Mike Reyes", quote_amount: null, intake_notes: "Wants to upgrade from 100A to 200A ahead of EV charger install. Flexible on timing.", job_number: 1035, date: "2026-09-16" },
@@ -45,14 +55,14 @@ const JOBS = [
 // These jobs were authored before the field existed, so each one is seeded
 // here from its contact's address at this moment — the same rule any real
 // job-creation flow must follow (see defaultJobLocationForNewJob below).
-JOBS.forEach(job => {
+LOCAL_JOB_SEED.forEach(job => {
   if (job.job_location === undefined) {
-    const contact = CONTACTS.find(c => c.id === job.contact_id);
+    const contact = LOCAL_CONTACT_SEED.find(c => c.id === job.contact_id);
     job.job_location = contact ? contact.address : "";
   }
 });
 
-const APPOINTMENTS = [
+const LOCAL_APPOINTMENT_SEED = [
   { id: "a1", job_id: "j1", start_time: "2026-09-18T09:00", end_time: "2026-09-18T11:00", assigned_tech: "Ray Dunmore", status: "Confirmed" },
   { id: "a2", job_id: "j5", start_time: "2026-09-18T11:30", end_time: "2026-09-18T12:30", assigned_tech: "Kim Osei", status: "Confirmed" },
   { id: "a3", job_id: "j6", start_time: "2026-09-17T14:00", end_time: "2026-09-17T15:00", assigned_tech: "Nia Brackett", status: "Completed" },
@@ -186,142 +196,8 @@ const ACTIVITY_LOG = [
 ];
 
 // STATUS_PIPELINE, URGENCY_LEVELS, JOB_TYPES and APPOINTMENT_TYPES are
-// defined by js/labels.js (Settings → Pipeline & Labels), loaded in <head>.
-
-/* ------------------------------ Job status ---------------------------------
-   Status can change from two places — dragging a card on the Boards page, or
-   clicking a pipeline step on the job detail page — so it lives in ONE
-   shared store, keyed by job id, following the same localStorage-with-
-   in-memory-fallback pattern as the job-number counter above. JOBS is
-   patched from that store as soon as it's read below, so every existing
-   getJob()/JOBS read across the app already sees the latest status with no
-   other code needing to know the store exists. setJobStatus() is the ONLY
-   sanctioned way to change a job's status afterward. */
-const JOB_STATUS_STORAGE_KEY = "foreman-job-status";
-let inMemoryStatusOverrides = null; // fallback if localStorage throws/unavailable
-
-function readStatusOverrides() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(JOB_STATUS_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return inMemoryStatusOverrides || {};
-}
-
-function writeStatusOverrides(overrides) {
-  inMemoryStatusOverrides = overrides;
-  try {
-    localStorage.setItem(JOB_STATUS_STORAGE_KEY, JSON.stringify(overrides));
-  } catch (e) {}
-}
-
-(function applyStatusOverrides() {
-  const overrides = readStatusOverrides();
-  JOBS.forEach(job => {
-    if (overrides[job.id] && STATUS_PIPELINE.includes(overrides[job.id])) {
-      job.status = overrides[job.id];
-    }
-  });
-})();
-
-function setJobStatus(jobId, status) {
-  const job = getJob(jobId);
-  if (!job || job.status === status) return;
-  job.status = status;
-  const overrides = readStatusOverrides();
-  overrides[jobId] = status;
-  writeStatusOverrides(overrides);
-
-  // Every path that changes status — the job page's pills, a Boards drag —
-  // funnels through here, so this is the one place Completed can trigger
-  // materials deduction. deductMaterialsForJob() is itself idempotent (see
-  // its own flag below), so this can fire on every arrival at Completed
-  // without double-deducting.
-  // Matched by the stage's stable role id, not its name, so renaming
-  // "Completed" in Settings → Pipeline & Labels doesn't break this.
-  if (status === statusNameForRole("completed")) deductMaterialsForJob(jobId);
-}
-
-/* ------------------------------ Job urgency ---------------------------------
-   Same shape as the status store above, for the same reason: urgency shows
-   up wherever a job does — the job detail page and Boards cards today,
-   anywhere else it gets added later — and a change from any one of them
-   must show up in all the others. setJobUrgency() is the ONLY sanctioned
-   way to change it. */
-const JOB_URGENCY_STORAGE_KEY = "foreman-job-urgency";
-let inMemoryUrgencyOverrides = null; // fallback if localStorage throws/unavailable
-
-function readUrgencyOverrides() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(JOB_URGENCY_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return inMemoryUrgencyOverrides || {};
-}
-
-function writeUrgencyOverrides(overrides) {
-  inMemoryUrgencyOverrides = overrides;
-  try {
-    localStorage.setItem(JOB_URGENCY_STORAGE_KEY, JSON.stringify(overrides));
-  } catch (e) {}
-}
-
-(function applyUrgencyOverrides() {
-  const overrides = readUrgencyOverrides();
-  JOBS.forEach(job => {
-    if (overrides[job.id] && URGENCY_LEVELS.includes(overrides[job.id])) {
-      job.urgency = overrides[job.id];
-    }
-  });
-})();
-
-function setJobUrgency(jobId, urgency) {
-  const job = getJob(jobId);
-  if (!job || job.urgency === urgency) return;
-  job.urgency = urgency;
-  const overrides = readUrgencyOverrides();
-  overrides[jobId] = urgency;
-  writeUrgencyOverrides(overrides);
-}
-
-/* --------------------------- Job appointment type ----------------------------
-   Same shape as Urgency above, and independent from Job Type (a separate
-   field entirely) — its own picker, own store, own setter. */
-const JOB_APPOINTMENT_TYPE_STORAGE_KEY = "foreman-job-appointment-type";
-let inMemoryAppointmentTypeOverrides = null;
-
-function readAppointmentTypeOverrides() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(JOB_APPOINTMENT_TYPE_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return inMemoryAppointmentTypeOverrides || {};
-}
-
-function writeAppointmentTypeOverrides(overrides) {
-  inMemoryAppointmentTypeOverrides = overrides;
-  try {
-    localStorage.setItem(JOB_APPOINTMENT_TYPE_STORAGE_KEY, JSON.stringify(overrides));
-  } catch (e) {}
-}
-
-(function applyAppointmentTypeOverrides() {
-  const overrides = readAppointmentTypeOverrides();
-  JOBS.forEach(job => {
-    if (overrides[job.id] && APPOINTMENT_TYPES.includes(overrides[job.id])) {
-      job.appointment_type = overrides[job.id];
-    }
-  });
-})();
-
-function setJobAppointmentType(jobId, appointmentType) {
-  const job = getJob(jobId);
-  if (!job || job.appointment_type === appointmentType) return;
-  job.appointment_type = appointmentType;
-  const overrides = readAppointmentTypeOverrides();
-  overrides[jobId] = appointmentType;
-  writeAppointmentTypeOverrides(overrides);
-}
+// defined by js/labels.js (Settings → Pipeline & Labels), filled from
+// Supabase before any page renders.
 
 /* ------------------------------ Sales reps ----------------------------------
    The roster options for every Sales Rep dropdown in the app: the per-job
@@ -329,351 +205,17 @@ function setJobAppointmentType(jobId, appointmentType) {
    rep filter. One shared list so those three can never drift apart. */
 const SALES_REPS = ["Dana Ferris", "Kim Osei", "Mike Reyes", "Ray Dunmore", "Unassigned"];
 
-/* ------------------------- Job sales rep (per job) --------------------------
-   Who's currently working this job's deal — distinct from assigned_to (the
-   field technician) and from the *contact's* sales_rep further down (whose
-   account this is). Same shape as the status/urgency stores: JOBS is
-   patched from this store as soon as it's read below, and setJobSalesRep()
-   is the ONLY sanctioned way to change it afterward. */
-const JOB_SALES_REP_STORAGE_KEY = "foreman-job-sales-rep";
-let inMemoryJobSalesRepOverrides = null; // fallback if localStorage throws/unavailable
-
-function readJobSalesRepOverrides() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(JOB_SALES_REP_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return inMemoryJobSalesRepOverrides || {};
-}
-
-function writeJobSalesRepOverrides(overrides) {
-  inMemoryJobSalesRepOverrides = overrides;
-  try {
-    localStorage.setItem(JOB_SALES_REP_STORAGE_KEY, JSON.stringify(overrides));
-  } catch (e) {}
-}
-
-(function applyJobSalesRepOverrides() {
-  const overrides = readJobSalesRepOverrides();
-  JOBS.forEach(job => {
-    if (overrides[job.id]) job.sales_rep = overrides[job.id];
-  });
-})();
-
-function setJobSalesRep(jobId, rep) {
-  const job = getJob(jobId);
-  if (!job || job.sales_rep === rep) return;
-  job.sales_rep = rep;
-  const overrides = readJobSalesRepOverrides();
-  overrides[jobId] = rep;
-  writeJobSalesRepOverrides(overrides);
-}
-
-/* ------------------------ Job assigned-to (per job) --------------------------
-   The field technician doing the work — distinct from sales_rep above (who
-   sold it), same principle as the contact-rep/job-rep split further down:
-   two independent fields that happen to share a UI pattern (a click-to-open
-   picker off the same SALES_REPS roster), never one field in two places.
-   Own key, own setter; setJobAssignedTo() never touches the sales-rep
-   store, and vice versa. */
-const JOB_ASSIGNED_TO_STORAGE_KEY = "foreman-job-assigned-to";
-let inMemoryJobAssignedToOverrides = null; // fallback if localStorage throws/unavailable
-
-function readJobAssignedToOverrides() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(JOB_ASSIGNED_TO_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return inMemoryJobAssignedToOverrides || {};
-}
-
-function writeJobAssignedToOverrides(overrides) {
-  inMemoryJobAssignedToOverrides = overrides;
-  try {
-    localStorage.setItem(JOB_ASSIGNED_TO_STORAGE_KEY, JSON.stringify(overrides));
-  } catch (e) {}
-}
-
-(function applyJobAssignedToOverrides() {
-  const overrides = readJobAssignedToOverrides();
-  JOBS.forEach(job => {
-    if (overrides[job.id]) job.assigned_to = overrides[job.id];
-  });
-})();
-
-function setJobAssignedTo(jobId, tech) {
-  const job = getJob(jobId);
-  if (!job || job.assigned_to === tech) return;
-  job.assigned_to = tech;
-  const overrides = readJobAssignedToOverrides();
-  overrides[jobId] = tech;
-  writeJobAssignedToOverrides(overrides);
-}
-
-/* ----------------------- Contact sales rep (per contact) ---------------------
-   Who owns this contact's account — a completely separate field from any
-   job's own sales_rep above, stored under its own key and keyed by CONTACT
-   id, not job id. Changing one never touches the other: setContactSalesRep()
-   only ever writes to this store, and setJobSalesRep() above only ever
-   writes to the job store — there is no code path that lets a contact-rep
-   change ripple into any of that contact's jobs, past or future. */
-const CONTACT_SALES_REP_STORAGE_KEY = "foreman-contact-sales-rep";
-let inMemoryContactSalesRepOverrides = null; // fallback if localStorage throws/unavailable
-
-function readContactSalesRepOverrides() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(CONTACT_SALES_REP_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return inMemoryContactSalesRepOverrides || {};
-}
-
-function writeContactSalesRepOverrides(overrides) {
-  inMemoryContactSalesRepOverrides = overrides;
-  try {
-    localStorage.setItem(CONTACT_SALES_REP_STORAGE_KEY, JSON.stringify(overrides));
-  } catch (e) {}
-}
-
-(function applyContactSalesRepOverrides() {
-  const overrides = readContactSalesRepOverrides();
-  CONTACTS.forEach(contact => {
-    if (overrides[contact.id]) contact.sales_rep = overrides[contact.id];
-  });
-})();
-
-function setContactSalesRep(contactId, rep) {
-  const contact = getContact(contactId);
-  if (!contact || contact.sales_rep === rep) return;
-  contact.sales_rep = rep;
-  const overrides = readContactSalesRepOverrides();
-  overrides[contactId] = rep;
-  writeContactSalesRepOverrides(overrides);
-}
-
-// The rule a new job must follow at creation time: its sales_rep starts as
-// a one-time COPY of its contact's *current* sales_rep, not a live link —
-// after this, editing the contact's rep never touches the job, and editing
-// the job's rep never touches the contact. There's no job-creation form
-// wired up in this preview yet — jobs are created from within an existing
-// contact, not standalone — but whenever one exists, it must seed
-// sales_rep this way rather than leaving it blank or copying assigned_to.
-function defaultSalesRepForNewJob(contact) {
-  return contact.sales_rep;
-}
-
-/* --------------------------- Contact details (editable) ---------------------
-   The manually-editable part of a contact's own info — phone, email,
-   address, preferred_contact, source, plus any custom label/value fields
-   the owner adds — all saved together as one bundle per contact id, all
-   through the Contact card's single Edit/Save/Cancel flow. Its own key,
-   fully separate from status/urgency/sales-rep above: setContactDetails()
-   never touches those stores, and none of them ever touch this one. */
-const CONTACT_DETAILS_STORAGE_KEY = "foreman-contact-details";
-let inMemoryContactDetailsOverrides = null; // fallback if localStorage throws/unavailable
-
-function readContactDetailsOverrides() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(CONTACT_DETAILS_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return inMemoryContactDetailsOverrides || {};
-}
-
-function writeContactDetailsOverrides(overrides) {
-  inMemoryContactDetailsOverrides = overrides;
-  try {
-    localStorage.setItem(CONTACT_DETAILS_STORAGE_KEY, JSON.stringify(overrides));
-  } catch (e) {}
-}
-
-(function applyContactDetailsOverrides() {
-  const overrides = readContactDetailsOverrides();
-  CONTACTS.forEach(contact => {
-    const saved = overrides[contact.id];
-    if (!saved) return;
-    contact.phone = saved.phone;
-    contact.email = saved.email;
-    contact.address = saved.address;
-    contact.preferred_contact = saved.preferred_contact;
-    // Guarded (unlike the fields above): a bundle saved before this build
-    // added Source to the Edit form won't have it, and undefined would
-    // otherwise blank out a perfectly good existing contact.source.
-    if (saved.source !== undefined) contact.source = saved.source;
-    contact.custom_fields = Array.isArray(saved.custom_fields) ? saved.custom_fields : [];
-  });
-})();
-
-// The ONLY sanctioned way to change a contact's editable details — commits
-// the whole bundle (Save is one atomic action, not five separate ones).
-function setContactDetails(contactId, details) {
-  const contact = getContact(contactId);
-  if (!contact) return;
-  contact.phone = details.phone;
-  contact.email = details.email;
-  contact.address = details.address;
-  contact.preferred_contact = details.preferred_contact;
-  contact.source = details.source;
-  contact.custom_fields = details.custom_fields;
-
-  const overrides = readContactDetailsOverrides();
-  overrides[contactId] = {
-    phone: details.phone,
-    email: details.email,
-    address: details.address,
-    preferred_contact: details.preferred_contact,
-    source: details.source,
-    custom_fields: details.custom_fields,
-  };
-  writeContactDetailsOverrides(overrides);
-}
-
-/* ---------------------------- Job details (editable) -------------------------
-   quote_amount, intake_notes, and job_location — plain fields directly on
-   the Job object, edited together via the Job card's own Edit/Save/Cancel
-   flow. Job Type used to live here too; it's now its own always-on picker
-   (see "Job type" below), same as Urgency/Sales Rep/Assigned To/Appointment
-   Type, so it's deliberately NOT part of this draft/save/cancel object
-   anymore. Mirrors the Contact card's foreman-contact-details store above,
-   one key per record, but this one's keyed by job id and fully separate
-   from it (and from status/urgency/sales-rep). The card's Edit form also
-   edits the job's appointment time, but that's a different entity — see
-   setAppointmentTime() below, its own store. */
-const JOB_DETAILS_STORAGE_KEY = "foreman-job-details";
-let inMemoryJobDetailsOverrides = null; // fallback if localStorage throws/unavailable
-
-function readJobDetailsOverrides() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(JOB_DETAILS_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return inMemoryJobDetailsOverrides || {};
-}
-
-function writeJobDetailsOverrides(overrides) {
-  inMemoryJobDetailsOverrides = overrides;
-  try {
-    localStorage.setItem(JOB_DETAILS_STORAGE_KEY, JSON.stringify(overrides));
-  } catch (e) {}
-}
-
-(function applyJobDetailsOverrides() {
-  const overrides = readJobDetailsOverrides();
-  JOBS.forEach(job => {
-    const saved = overrides[job.id];
-    if (!saved) return;
-    if (saved.quote_amount !== undefined) job.quote_amount = saved.quote_amount;
-    if (saved.intake_notes !== undefined) job.intake_notes = saved.intake_notes;
-    if (saved.job_location !== undefined) job.job_location = saved.job_location;
-  });
-})();
-
-function setJobDetails(jobId, details) {
-  const job = getJob(jobId);
-  if (!job) return;
-  job.quote_amount = details.quote_amount;
-  job.intake_notes = details.intake_notes;
-  job.job_location = details.job_location;
-
-  const overrides = readJobDetailsOverrides();
-  overrides[jobId] = {
-    quote_amount: details.quote_amount,
-    intake_notes: details.intake_notes,
-    job_location: details.job_location,
-  };
-  writeJobDetailsOverrides(overrides);
-}
-
-/* -------------------------------- Job type -----------------------------------
-   Pulled out of the Edit/Save/Cancel job-details store above into its own
-   picker store — same shape as Appointment Type just below, and the same
-   reasoning: Job Type shows up wherever a job does (its own card, Boards,
-   Calendar, Today's Schedule, Recently Viewed, the Contacts Jobs index), so
-   a change from any one of them must show up in all the others immediately,
-   the same guarantee every other picker field in this file already gives. */
-const JOB_TYPE_STORAGE_KEY = "foreman-job-type";
-let inMemoryJobTypeOverrides = null;
-
-function readJobTypeOverrides() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(JOB_TYPE_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return inMemoryJobTypeOverrides || {};
-}
-
-function writeJobTypeOverrides(overrides) {
-  inMemoryJobTypeOverrides = overrides;
-  try {
-    localStorage.setItem(JOB_TYPE_STORAGE_KEY, JSON.stringify(overrides));
-  } catch (e) {}
-}
-
-(function applyJobTypeOverrides() {
-  const overrides = readJobTypeOverrides();
-  JOBS.forEach(job => {
-    if (overrides[job.id] && JOB_TYPES.includes(overrides[job.id])) {
-      job.job_type = overrides[job.id];
-    }
-  });
-})();
-
-function setJobType(jobId, jobType) {
-  const job = getJob(jobId);
-  if (!job || job.job_type === jobType) return;
-  job.job_type = jobType;
-  const overrides = readJobTypeOverrides();
-  overrides[jobId] = jobType;
-  writeJobTypeOverrides(overrides);
-}
-
-/* ----------------------------- Label renames --------------------------------
-   Jobs store a label's *name*, so renaming one in Settings → Pipeline &
-   Labels has to carry every job holding the old name over to the new one.
-   This writes each job's per-field override store directly rather than
-   going through setJobStatus() & co., so a rename is purely a relabel —
-   it never re-triggers a status side effect like Completed's materials
-   deduction. Every job (mock seed or not) that had the old name ends up
-   with an override, so the seed data's original value never resurfaces. */
-const LABEL_OVERRIDE_STORES = {
-  status: { read: () => readStatusOverrides(), write: o => writeStatusOverrides(o) },
-  job_type: { read: () => readJobTypeOverrides(), write: o => writeJobTypeOverrides(o) },
-  appointment_type: { read: () => readAppointmentTypeOverrides(), write: o => writeAppointmentTypeOverrides(o) },
-  urgency: { read: () => readUrgencyOverrides(), write: o => writeUrgencyOverrides(o) },
-};
-
-function jobsUsingLabel(kind, name) {
-  const field = LABEL_KINDS[kind].jobField;
-  return JOBS.filter(job => job[field] === name);
-}
-
-// Returns an error message, or null on success. Names must be non-empty
-// and unique within their list (case-insensitively) — two entries both
-// called "Repair" would be indistinguishable on every job carrying one.
-function renameLabel(kind, id, rawName) {
-  const name = String(rawName || "").trim();
-  if (!name) return "Name can't be empty.";
-  const list = getLabels(kind);
-  const entry = list.find(e => e.id === id);
-  if (!entry) return null;
-  if (entry.name === name) return null;
-  if (list.some(e => e.id !== id && e.name.toLowerCase() === name.toLowerCase())) {
-    return `There's already a ${LABEL_KINDS[kind].noun} called "${name}".`;
-  }
-
-  const oldName = entry.name;
-  entry.name = name;
-  setLabels(kind, list);
-
-  const store = LABEL_OVERRIDE_STORES[kind];
-  const overrides = store.read();
-  jobsUsingLabel(kind, oldName).forEach(job => {
-    job[LABEL_KINDS[kind].jobField] = name;
-    overrides[job.id] = name;
-  });
-  store.write(overrides);
-  return null;
-}
+/* ------------------------------ Contacts & jobs ------------------------------
+   Both are stored in Supabase. CONTACTS, JOBS and APPOINTMENTS below are
+   the in-memory lists every page reads synchronously (getContact, getJob,
+   getAppointmentForJob…); they're filled from Supabase before any page
+   renders — see js/contacts-store.js and js/jobs-store.js, which also hold
+   every function that changes them. APPOINTMENTS isn't a table of its own:
+   a job's appointment is part of its Supabase row, and this list is
+   rebuilt from JOBS whenever one changes. */
+const CONTACTS = [];
+const JOBS = [];
+const APPOINTMENTS = [];
 
 // The rule a new job must follow at creation time: its job_location starts
 // as a one-time COPY of its contact's *current* address, not a live link —
@@ -684,65 +226,6 @@ function renameLabel(kind, id, rawName) {
 // whenever one exists, it must seed job_location this way.
 function defaultJobLocationForNewJob(contact) {
   return contact.address;
-}
-
-/* -------------------------- Appointment time (editable) ----------------------
-   An appointment is its own entity (APPOINTMENTS), not a field on Job, but
-   the Job card's Edit form edits its date/start/end time alongside
-   quote_amount/intake_notes/job_location. This app assumes at most one
-   appointment per job — same assumption getAppointmentForJob() already
-   makes with .find() — so this store is keyed by job id, not appointment
-   id. Saving for a job with no existing appointment creates one
-   (assigned_tech defaults to the job's own assigned_to, status defaults to
-   "Pending confirmation"); those two fields aren't otherwise touched by
-   this form. */
-const APPOINTMENT_TIME_STORAGE_KEY = "foreman-appointment-time";
-let inMemoryAppointmentTimeOverrides = null; // fallback if localStorage throws/unavailable
-
-function readAppointmentTimeOverrides() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(APPOINTMENT_TIME_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return inMemoryAppointmentTimeOverrides || {};
-}
-
-function writeAppointmentTimeOverrides(overrides) {
-  inMemoryAppointmentTimeOverrides = overrides;
-  try {
-    localStorage.setItem(APPOINTMENT_TIME_STORAGE_KEY, JSON.stringify(overrides));
-  } catch (e) {}
-}
-
-function findOrCreateAppointment(jobId) {
-  let appt = getAppointmentForJob(jobId);
-  if (appt) return appt;
-  const job = getJob(jobId);
-  if (!job) return null;
-  appt = { id: "appt-" + jobId, job_id: jobId, assigned_tech: job.assigned_to, status: "Pending confirmation" };
-  APPOINTMENTS.push(appt);
-  return appt;
-}
-
-(function applyAppointmentTimeOverrides() {
-  const overrides = readAppointmentTimeOverrides();
-  Object.keys(overrides).forEach(jobId => {
-    const appt = findOrCreateAppointment(jobId);
-    if (!appt) return;
-    appt.start_time = overrides[jobId].start_time;
-    appt.end_time = overrides[jobId].end_time;
-  });
-})();
-
-function setAppointmentTime(jobId, startTimeIso, endTimeIso) {
-  const appt = findOrCreateAppointment(jobId);
-  if (!appt) return;
-  appt.start_time = startTimeIso;
-  appt.end_time = endTimeIso;
-
-  const overrides = readAppointmentTimeOverrides();
-  overrides[jobId] = { start_time: startTimeIso, end_time: endTimeIso };
-  writeAppointmentTimeOverrides(overrides);
 }
 
 /* ---------------------------- Business settings -----------------------------
@@ -816,48 +299,8 @@ function addMinutesToTime(hhmm, minutes) {
   return String(Math.floor(total / 60)).padStart(2, "0") + ":" + String(total % 60).padStart(2, "0");
 }
 
-/* ----------------------------- Job numbering ------------------------------
-   Job numbers (the "Job #1042" shown throughout the app) must be globally
-   unique and never reused — including after a job is deleted or archived.
-   A persisted counter, not a scan of the current JOBS array, is what makes
-   that true: JOBS is just today's snapshot of mock data and could shrink if
-   a job were ever removed, but the counter only ever moves forward. It's
-   seeded once — above the highest job_number already used in the mock data
-   — then persisted in localStorage, following the same pattern js/theme.js
-   uses for its own saved settings.
-
-   reserveJobNumber() is the ONLY sanctioned way anything gets a job_number:
-   nothing in the app should compute or reuse one another way. */
-const JOB_NUMBER_STORAGE_KEY = "foreman-next-job-number";
-let inMemoryNextJobNumber = null; // fallback if localStorage throws/unavailable
-
-function highestExistingJobNumber() {
-  return JOBS.reduce((max, j) => Math.max(max, j.job_number), 0);
-}
-
-function readNextJobNumber() {
-  try {
-    const stored = parseInt(localStorage.getItem(JOB_NUMBER_STORAGE_KEY), 10);
-    if (Number.isFinite(stored)) return stored;
-  } catch (e) {}
-  if (inMemoryNextJobNumber !== null) return inMemoryNextJobNumber;
-  return highestExistingJobNumber() + 1;
-}
-
-function writeNextJobNumber(value) {
-  inMemoryNextJobNumber = value;
-  try {
-    localStorage.setItem(JOB_NUMBER_STORAGE_KEY, String(value));
-  } catch (e) {}
-}
-
-// Hands out the next job number and advances the counter so it can never be
-// handed out again, even if the job that received it is later deleted.
-function reserveJobNumber() {
-  const number = readNextJobNumber();
-  writeNextJobNumber(number + 1);
-  return number;
-}
+// Job numbers come from Supabase's job_number_seq (via the next_job_number()
+// function) — see createJobForContact() in js/jobs-store.js.
 
 function getContact(id) { return CONTACTS.find(c => c.id === id); }
 function getJob(id) { return JOBS.find(j => j.id === id); }
@@ -915,6 +358,13 @@ function appointmentTypeBadgeClass(appointmentType) { return labelBadgeClass("ap
 // from the same swatch set already offered in Settings' color pickers.
 // Unassigned falls back to the neutral grey used for "no one" everywhere
 // else (New Lead's status badge, Low urgency).
+// Appointment state badge (job page): Confirmed reads pine, Pending gold —
+// as before — and Completed takes the "done" pipeline stage's own color.
+function appointmentStatusBadgeClass(status) {
+  if (status === "Completed") return statusBadgeClass(statusNameForRole("completed"));
+  return status === "Confirmed" ? "badge-scheduled" : "badge-qualified";
+}
+
 function salesRepBadgeClass(rep) {
   const map = {
     ray: "badge-rep-ray",
@@ -963,7 +413,7 @@ function pickerHtml(field, entityId, options, currentValue) {
 }
 
 function urgencyPickerHtml(job) {
-  return pickerHtml("urgency", job.id, URGENCY_LEVELS, job.urgency);
+  return pickerHtml("urgency", job.id, labelOptions("urgency", job.urgency), job.urgency);
 }
 
 function salesRepPickerHtml(job) {
@@ -979,11 +429,11 @@ function contactSalesRepPickerHtml(contact) {
 }
 
 function appointmentTypePickerHtml(job) {
-  return pickerHtml("appointment_type", job.id, APPOINTMENT_TYPES, job.appointment_type);
+  return pickerHtml("appointment_type", job.id, labelOptions("appointment_type", job.appointment_type), job.appointment_type);
 }
 
 function jobTypePickerHtml(job) {
-  return pickerHtml("job_type", job.id, JOB_TYPES, job.job_type);
+  return pickerHtml("job_type", job.id, labelOptions("job_type", job.job_type), job.job_type);
 }
 
 // Closing on an outside click/scroll is one listener shared by every picker
@@ -1030,8 +480,14 @@ function wirePickers(root, onChange) {
       option.addEventListener("click", e => {
         e.preventDefault();
         e.stopPropagation();
-        setValue(entityId, option.getAttribute("data-value"));
+        const result = setValue(entityId, option.getAttribute("data-value"));
         onChange();
+        // Supabase-backed fields (the contact's Sales Rep) save
+        // asynchronously and roll back if the save fails — re-render once
+        // more then, so the badge shows what's actually stored.
+        if (result && typeof result.then === "function") {
+          result.then(r => { if (r && r.error) onChange(); });
+        }
       });
     });
   });
@@ -1102,7 +558,8 @@ function initials(name) {
 }
 
 // One row per contact, or per matching job when the match is job-specific
-// (a job number) — the job is *why* that row matched, so the result points
+// (a job number, or the job's title like "water heater") — the job is *why*
+// that row matched, so the result points
 // straight at it instead of the contact's profile. Empty query returns no
 // results (the dropdown that consumes this hides itself on empty input).
 function searchDirectory(rawQuery) {
@@ -1113,7 +570,7 @@ function searchDirectory(rawQuery) {
   const results = [];
   contactsByName.forEach(contact => {
     const matchedJobs = getJobsForContact(contact.id)
-      .filter(job => jobNumberMatches(job, q))
+      .filter(job => jobNumberMatches(job, q) || textIncludes(job.service_type, q))
       .sort((a, b) => a.job_number - b.job_number);
 
     if (matchedJobs.length > 0) {
@@ -1168,14 +625,14 @@ const REVIEW_LISTS = {
   leads: {
     title: "New Leads This Week",
     verb: "reviewed",
-    storageKey: "foreman-leads-reviewed",
+    jobField: "lead_reviewed",
     getItems: () => JOBS.filter(j => j.status === statusNameForRole("lead")),
     getId: job => job.id,
   },
   appointments: {
     title: "Appointments Today",
     verb: "completed",
-    storageKey: "foreman-appointments-completed",
+    jobField: "appointment_completed",
     // Same set as the Dashboard's "Today's schedule" card.
     getItems: () => APPOINTMENTS.filter(a => a.start_time.startsWith(TODAY)),
     getId: appt => appt.job_id,
@@ -1190,7 +647,7 @@ const REVIEW_LISTS = {
   priority: {
     title: "Priority",
     verb: "resolved",
-    storageKey: "foreman-priority-resolved",
+    jobField: "priority_resolved",
     // There's no "missed call" or "overdue quote" concept in the data
     // model (the dashboard's old priorityCount was a flat mock number —
     // see js/dashboard.js history). Unconfirmed appointments are the one
@@ -1201,9 +658,32 @@ const REVIEW_LISTS = {
   },
 };
 
+// Leads / Appointments / Priority are flags on the job itself (Supabase:
+// lead_reviewed, appointment_completed, priority_resolved), so the review
+// page, the Dashboard stat cards and Today's Schedule checkbox all read and
+// write the same field. Follow-ups has no job field — it keeps its own
+// localStorage store.
+function isReviewChecked(type, id) {
+  const list = REVIEW_LISTS[type];
+  if (list.jobField) {
+    const job = getJob(id);
+    return !!(job && job[list.jobField]);
+  }
+  return isChecked(list.storageKey, id);
+}
+
+// Returns a promise resolving to { error } for job-backed lists (saved to
+// Supabase); localStorage-backed ones save instantly.
+function setReviewChecked(type, id, checked) {
+  const list = REVIEW_LISTS[type];
+  if (list.jobField) return setJobFlag(id, list.jobField, checked);
+  setChecked(list.storageKey, id, checked);
+  return Promise.resolve({ error: null });
+}
+
 function reviewRemainingCount(type) {
   const list = REVIEW_LISTS[type];
-  return list.getItems().filter(item => !isChecked(list.storageKey, list.getId(item))).length;
+  return list.getItems().filter(item => !isReviewChecked(type, list.getId(item))).length;
 }
 
 /* --------------------------- Activity feed checkboxes -------------------------
@@ -1230,13 +710,13 @@ function activityReviewType(item) {
 
 function isActivityItemHandled(item) {
   const type = activityReviewType(item);
-  if (type) return isChecked(REVIEW_LISTS[type].storageKey, item.related_job_id);
+  if (type) return isReviewChecked(type, item.related_job_id);
   return isChecked(ACTIVITY_DISMISSED_STORAGE_KEY, item.id);
 }
 
 function setActivityItemHandled(item, handled) {
   const type = activityReviewType(item);
-  if (type) setChecked(REVIEW_LISTS[type].storageKey, item.related_job_id, handled);
+  if (type) setReviewChecked(type, item.related_job_id, handled);
   else setChecked(ACTIVITY_DISMISSED_STORAGE_KEY, item.id, handled);
 }
 
@@ -1731,16 +1211,14 @@ function deleteEstimateFromJob(jobId, estimateId) {
 
 /* ------------------------ Materials deduction on Completed --------------------
    The moment a job's status becomes Completed — from the pills on the job
-   page or a Boards drag, both of which funnel through setJobStatus() below
-   — each of that job's Materials Used quantities comes off the matching
-   inventory item's quantity on hand, exactly once ever per job. The
-   "already deducted" flag reuses the same isChecked()/setChecked() every
-   other simple per-job flag in this app uses, so toggling status away from
-   and back to Completed can't deduct a second time. */
-const JOB_MATERIALS_DEDUCTED_STORAGE_KEY = "foreman-job-materials-deducted";
-
+   page or a Boards drag, both of which funnel through setJobStatus() in
+   js/jobs-store.js — each of that job's Materials Used quantities comes off
+   the matching inventory item's quantity on hand, exactly once ever per
+   job. Materials and Inventory are still localStorage; the "already
+   deducted" flag is the job's own materials_deducted field in Supabase.
+   setJobStatus() sets it in the same save that moves the job to Completed
+   and only calls this once that save succeeds, so toggling status away
+   from and back to Completed can't deduct a second time. */
 function deductMaterialsForJob(jobId) {
-  if (isChecked(JOB_MATERIALS_DEDUCTED_STORAGE_KEY, jobId)) return;
   getMaterialsForJob(jobId).forEach(m => adjustInventoryQuantity(m.inventory_id, -m.quantity));
-  setChecked(JOB_MATERIALS_DEDUCTED_STORAGE_KEY, jobId, true);
 }

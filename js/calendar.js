@@ -8,7 +8,7 @@ const state = {
   refDate: new Date(TODAY + "T00:00"),
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+whenAppReady(() => {
   document.querySelectorAll(".view-toggle-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       state.view = btn.dataset.view;

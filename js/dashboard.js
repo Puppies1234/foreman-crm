@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+whenAppReady(() => {
   renderTodayStrip();
   applyDashboardWidgetVisibility();
   renderQuickActions();
@@ -60,7 +60,8 @@ function placeholderAction(label) {
 
 function renderTodayStrip() {
   const todaysAppts = APPOINTMENTS.filter(a => a.start_time.startsWith(TODAY));
-  const confirmed = todaysAppts.filter(a => a.status === "Confirmed").length;
+  // Completed counts too — it was confirmed before it happened.
+  const confirmed = todaysAppts.filter(a => a.confirmed).length;
   const pending = todaysAppts.length - confirmed;
 
   const pill = document.getElementById("today-pill");
@@ -174,7 +175,7 @@ function renderSchedule() {
     const contact = getContact(job.contact_id);
     // Same shared store review.html?type=appointments reads/writes — this
     // is the one place "completed" for a given job's appointment lives.
-    const completed = isChecked(REVIEW_LISTS.appointments.storageKey, job.id);
+    const completed = isReviewChecked("appointments", job.id);
     return `
       <a class="schedule-item ${completed ? "completed" : ""}" href="contact.html?job=${job.id}">
         <input type="checkbox" class="review-checkbox schedule-checkbox" data-job-id="${job.id}" ${completed ? "checked" : ""} aria-label="Mark appointment completed">
@@ -195,14 +196,16 @@ function renderSchedule() {
   // Unlike review.html, a checked row stays put (struck through) — this is
   // a schedule, not a to-do inbox. The anchor wraps the whole row, so the
   // checkbox needs preventDefault (not just stopPropagation) to keep a
-  // click on it from also following the row's own link.
+  // click on it from also following the row's own link — but preventDefault
+  // on a checkbox click also cancels its own toggle (so no "change" event
+  // ever fires), which is why the toggle is done here by hand instead.
   list.querySelectorAll(".schedule-checkbox").forEach(checkbox => {
     checkbox.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
-    });
-    checkbox.addEventListener("change", () => {
-      setChecked(REVIEW_LISTS.appointments.storageKey, checkbox.getAttribute("data-job-id"), checkbox.checked);
+      const jobId = checkbox.getAttribute("data-job-id");
+      setReviewChecked("appointments", jobId, !isReviewChecked("appointments", jobId))
+        .then(r => { if (r.error) { renderSchedule(); renderStats(); } });
       renderSchedule();
       renderStats();
     });

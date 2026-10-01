@@ -1,7 +1,7 @@
 // Shared drill-down list for all 4 Dashboard stat cards — which list is
 // which comes from ?type=, REVIEW_LISTS (js/data.js) owns the data side
 // (source array, id, storage key), this file only owns row presentation.
-document.addEventListener("DOMContentLoaded", () => {
+whenAppReady(() => {
   const type = new URLSearchParams(window.location.search).get("type");
   const list = REVIEW_LISTS[type];
 
@@ -18,7 +18,7 @@ function render(type, list) {
   document.title = `${list.title} — ${getBrand().name}`;
   document.getElementById("review-title").textContent = list.title;
 
-  const items = list.getItems().filter(item => !isChecked(list.storageKey, list.getId(item)));
+  const items = list.getItems().filter(item => !isReviewChecked(type, list.getId(item)));
   const subtitleEl = document.getElementById("review-subtitle");
   const listEl = document.getElementById("review-list");
 
@@ -40,7 +40,9 @@ function render(type, list) {
     // the list); clicking anywhere else on the row navigates instead.
     checkbox.addEventListener("click", e => e.stopPropagation());
     checkbox.addEventListener("change", () => {
-      setChecked(list.storageKey, id, true);
+      // Saved to the job in Supabase (or, for follow-ups, localStorage). If
+      // the save fails it's rolled back, and re-rendering puts it back.
+      setReviewChecked(type, id, true).then(r => { if (r.error) render(type, list); });
       render(type, list);
     });
 
