@@ -233,8 +233,9 @@ function defaultJobLocationForNewJob(contact) {
    service area and default appointment length. Lives here (not in
    settings.js) because the job page reads defaultAppointmentMinutes to
    auto-fill an appointment's end time. Draft-then-Save on the Settings
-   side, same as Notifications; setBusinessSettings() commits it whole. */
-const BUSINESS_SETTINGS_STORAGE_KEY = "foreman-business-settings";
+   side, same as Notifications; setBusinessSettings() commits it whole.
+   Saved in Supabase's app_settings row (business_*, service_area,
+   default_appointment_duration_minutes — js/settings-store.js). */
 const BUSINESS_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const APPOINTMENT_DURATION_OPTIONS = [
   { minutes: 30, label: "30 min" },
@@ -243,8 +244,6 @@ const APPOINTMENT_DURATION_OPTIONS = [
   { minutes: 120, label: "2 hr" },
   { minutes: 180, label: "3 hr" },
 ];
-let inMemoryBusinessSettings = null; // fallback if localStorage throws/unavailable
-
 function defaultBusinessSettings() {
   const hours = {};
   BUSINESS_DAYS.forEach(day => {
@@ -263,31 +262,40 @@ function defaultBusinessSettings() {
 
 function getBusinessSettings() {
   const defaults = defaultBusinessSettings();
-  let stored = null;
-  try {
-    stored = JSON.parse(localStorage.getItem(BUSINESS_SETTINGS_STORAGE_KEY));
-  } catch (e) {}
-  if (!stored || typeof stored !== "object") stored = inMemoryBusinessSettings;
-  if (!stored || typeof stored !== "object") return defaults;
-
+  const savedHours = appSetting("business_hours", {});
   const hours = {};
-  BUSINESS_DAYS.forEach(day => { hours[day] = Object.assign({}, defaults.hours[day], stored.hours && stored.hours[day]); });
-  const validDuration = APPOINTMENT_DURATION_OPTIONS.some(o => o.minutes === stored.defaultAppointmentMinutes);
+  BUSINESS_DAYS.forEach(day => { hours[day] = Object.assign({}, defaults.hours[day], savedHours && savedHours[day]); });
+  const duration = Number(appSetting("default_appointment_duration_minutes", defaults.defaultAppointmentMinutes));
+  const validDuration = APPOINTMENT_DURATION_OPTIONS.some(o => o.minutes === duration);
+  const serviceArea = appSetting("service_area", []);
   return {
-    phone: typeof stored.phone === "string" ? stored.phone : "",
-    email: typeof stored.email === "string" ? stored.email : "",
-    address: Object.assign({}, defaults.address, stored.address),
+    phone: appSetting("business_phone", ""),
+    email: appSetting("business_email", ""),
+    address: {
+      street: appSetting("business_street", ""),
+      city: appSetting("business_city", ""),
+      state: appSetting("business_state", ""),
+      zip: appSetting("business_zip", ""),
+    },
     hours,
-    serviceArea: Array.isArray(stored.serviceArea) ? stored.serviceArea.filter(v => typeof v === "string") : [],
-    defaultAppointmentMinutes: validDuration ? stored.defaultAppointmentMinutes : defaults.defaultAppointmentMinutes,
+    serviceArea: Array.isArray(serviceArea) ? serviceArea.filter(v => typeof v === "string") : [],
+    defaultAppointmentMinutes: validDuration ? duration : defaults.defaultAppointmentMinutes,
   };
 }
 
+// Resolves to { error } once saved to Supabase.
 function setBusinessSettings(settings) {
-  inMemoryBusinessSettings = settings;
-  try {
-    localStorage.setItem(BUSINESS_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-  } catch (e) {}
+  return saveAppSettings({
+    business_phone: settings.phone || null,
+    business_email: settings.email || null,
+    business_street: settings.address.street || null,
+    business_city: settings.address.city || null,
+    business_state: settings.address.state || null,
+    business_zip: settings.address.zip || null,
+    business_hours: settings.hours,
+    service_area: settings.serviceArea,
+    default_appointment_duration_minutes: settings.defaultAppointmentMinutes,
+  });
 }
 
 // "HH:MM" + minutes → "HH:MM", clamped to 23:59 so an appointment that
@@ -1044,28 +1052,28 @@ function estimateLineItemsTotal(lineItems) {
    the estimate itself; markup only scales line-item prices as they're
    copied from a template) — so changing a default later never reaches
    back into an estimate that already exists. */
-const ESTIMATE_DEFAULTS_STORAGE_KEY = "foreman-estimate-defaults";
 const DEFAULT_ESTIMATE_TERMS = "This estimate is valid for 30 days from the date issued. Pricing covers the labor and materials listed above; any additional work found once the job is underway will be quoted separately and done only with your approval. A deposit may be required to schedule work, with the balance due on completion. All workmanship is warrantied for one year from completion; manufacturer warranties apply to parts and equipment.";
 
+// Saved in Supabase's app_settings (estimate_default_tax_rate / _terms /
+// _markup — js/settings-store.js). Terms that were never set (null) fall
+// back to the standard boilerplate; terms deliberately cleared ("") stay empty.
 function getEstimateDefaults() {
-  const fallback = { taxRate: 0, terms: DEFAULT_ESTIMATE_TERMS, markup: 0 };
-  try {
-    const stored = JSON.parse(localStorage.getItem(ESTIMATE_DEFAULTS_STORAGE_KEY));
-    if (stored && typeof stored === "object") {
-      return {
-        taxRate: Number.isFinite(stored.taxRate) && stored.taxRate >= 0 ? stored.taxRate : 0,
-        terms: typeof stored.terms === "string" ? stored.terms : DEFAULT_ESTIMATE_TERMS,
-        markup: Number.isFinite(stored.markup) && stored.markup >= 0 ? stored.markup : 0,
-      };
-    }
-  } catch (e) {}
-  return fallback;
+  const nonNegative = v => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : 0);
+  const terms = appSetting("estimate_default_terms", null);
+  return {
+    taxRate: nonNegative(appSetting("estimate_default_tax_rate", 0)),
+    terms: typeof terms === "string" ? terms : DEFAULT_ESTIMATE_TERMS,
+    markup: nonNegative(appSetting("estimate_default_markup", 0)),
+  };
 }
 
+// Resolves to { error } once saved to Supabase.
 function setEstimateDefaults(defaults) {
-  try {
-    localStorage.setItem(ESTIMATE_DEFAULTS_STORAGE_KEY, JSON.stringify(defaults));
-  } catch (e) {}
+  return saveAppSettings({
+    estimate_default_tax_rate: defaults.taxRate,
+    estimate_default_terms: defaults.terms,
+    estimate_default_markup: defaults.markup,
+  });
 }
 
 // Rounds to the nearest cent, half up. toPrecision first strips float

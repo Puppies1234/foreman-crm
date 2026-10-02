@@ -1,8 +1,9 @@
-// Shared accent-color theming. Loaded early (in <head>) on every page so the
-// saved accent applies before first paint.
+// Shared accent-color theming. Loaded early (in <head>) on every page. The
+// saved accent and technician colors live in Supabase's app_settings row
+// (js/settings-store.js, loaded right after this); until that row arrives
+// these helpers return the defaults, and the page is kept hidden until the
+// real values are applied, so the defaults are never actually seen.
 (function () {
-  var STORAGE_KEY = 'foreman-accent-color';
-  var TECH_STORAGE_KEY = 'foreman-tech-colors';
   var DEFAULT_ACCENT = { h: 164, s: 50, l: 24 }; // matches #1F5C4C
 
   // Foreman's mock data only has three technicians (Ray Dunmore, Kim Osei,
@@ -124,44 +125,39 @@
     root.setProperty('--sidebar-bottom', bar.bottom);
   }
 
+  // app_settings stores the accent as a hex color plus accent_brightness
+  // (the Brightness slider's value). Hue and saturation come from the hex;
+  // the slider value is used as-is when it agrees with the hex (it only
+  // differs by hex rounding), so a saved slider position comes back exact.
   function getAccent() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        var parsed = JSON.parse(raw);
-        if (typeof parsed.h === 'number' && typeof parsed.s === 'number' && typeof parsed.l === 'number') {
-          return parsed;
-        }
-      }
-    } catch (e) {}
-    return DEFAULT_ACCENT;
+    var row = window.APP_SETTINGS;
+    if (!row || typeof row.accent_color !== 'string' || !/^#[0-9a-f]{6}$/i.test(row.accent_color)) return DEFAULT_ACCENT;
+    var hsl = hexToHsl(row.accent_color);
+    var b = Number(row.accent_brightness);
+    if (Number.isFinite(b) && Math.abs(b - hsl.l) <= 1) hsl.l = b;
+    return hsl;
   }
 
+  // Applies at once; resolves to { error } once saved to Supabase.
   function saveAccent(hsl) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(hsl));
     applyAccent(hsl);
+    return window.saveAppSettings({ accent_color: hslToHex(hsl.h, hsl.s, hsl.l).toUpperCase(), accent_brightness: hsl.l });
   }
 
   function techSlug(name) {
     return name.split(' ')[0].toLowerCase();
   }
 
-  function readColorMap(key, defaults) {
-    var merged = Object.assign({}, defaults);
-    try {
-      var raw = localStorage.getItem(key);
-      if (raw) {
-        var parsed = JSON.parse(raw);
-        Object.keys(merged).forEach(function (k) {
-          if (typeof parsed[k] === 'string') merged[k] = parsed[k];
-        });
-      }
-    } catch (e) {}
-    return merged;
-  }
-
+  // app_settings.calendar_colors (technician → hex), over the defaults.
   function getTechColors() {
-    return readColorMap(TECH_STORAGE_KEY, TECH_DEFAULTS);
+    var merged = Object.assign({}, TECH_DEFAULTS);
+    var saved = window.APP_SETTINGS && window.APP_SETTINGS.calendar_colors;
+    if (saved && typeof saved === 'object') {
+      Object.keys(merged).forEach(function (k) {
+        if (typeof saved[k] === 'string') merged[k] = saved[k];
+      });
+    }
+    return merged;
   }
 
   function applyTechColors(map) {
@@ -177,9 +173,10 @@
     });
   }
 
+  // Applies at once; resolves to { error } once saved to Supabase.
   function saveTechColors(map) {
-    localStorage.setItem(TECH_STORAGE_KEY, JSON.stringify(map));
     applyTechColors(map);
+    return window.saveAppSettings({ calendar_colors: map });
   }
 
   window.ForemanTheme = {
@@ -196,6 +193,7 @@
     saveAccent: saveAccent,
     getTechColors: getTechColors,
     saveTechColors: saveTechColors,
+    applyTechColors: applyTechColors,
     apply: applyAccent
   };
 

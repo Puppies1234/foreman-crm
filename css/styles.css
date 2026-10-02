@@ -3230,3 +3230,8 @@ button.label-editor-swatch:focus-visible {
 .label-editor-switch { margin: 0 4px; }
 .label-editor-row.is-disabled .label-editor-name { color: var(--ink-muted); background: var(--paper); }
 .label-editor-row.is-disabled .label-editor-swatch { opacity: 0.45; }
+
+/* Kept hidden until the Supabase settings row (accent color, logo, nav
+   toggles) has loaded and been applied — js/settings-store.js — so the
+   default branding never flashes before the real one. */
+html.settings-pending body { visibility: hidden; }

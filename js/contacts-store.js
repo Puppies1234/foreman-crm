@@ -139,14 +139,14 @@ const contactsReady = loadContactsFromSupabase().catch(err => {
   CONTACTS.splice(0, CONTACTS.length, ...legacyLocalContacts());
 });
 
-// Every page script's entry point: the DOM is parsed AND contacts, the
-// Pipeline & Labels lists (js/labels.js) and jobs (js/jobs-store.js) are all
-// loaded from Supabase. Replaces the plain DOMContentLoaded listener each page used to use.
+// Every page script's entry point: the DOM is parsed AND settings
+// (js/settings-store.js), contacts, the Pipeline & Labels lists
+// (js/labels.js) and jobs (js/jobs-store.js) are all loaded from Supabase. Replaces the plain DOMContentLoaded listener each page used to use.
 function whenAppReady(fn) {
   const domReady = document.readyState === "loading"
     ? new Promise(resolve => document.addEventListener("DOMContentLoaded", resolve, { once: true }))
     : Promise.resolve();
-  Promise.all([domReady, contactsReady, labelsReady, jobsReady]).then(() => fn());
+  Promise.all([domReady, settingsReady, contactsReady, labelsReady, jobsReady]).then(() => fn());
 }
 
 /* ------------------------------- Contact writes -------------------------------- */

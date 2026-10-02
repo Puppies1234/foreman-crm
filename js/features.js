@@ -1,11 +1,9 @@
 // Feature toggles (Settings → Features) — controls which optional parts of
 // the app are shown. Everything defaults to true (on), so an app that's
 // never touched Settings → Features looks exactly as it always has.
-// Runs immediately at load, not wrapped in DOMContentLoaded, same reasoning
-// as js/brand.js: this tag sits after the sidebar markup, so it can hide
-// nav links before first paint reaches them — no flash of a link that's
-// about to disappear.
-const FEATURES_STORAGE_KEY = "foreman-features";
+// Saved in Supabase's app_settings.feature_flags (js/settings-store.js),
+// which re-applies the nav toggles once that row has loaded and keeps the
+// page hidden until then — so a hidden nav link is never seen flashing in.
 
 const DEFAULT_FEATURES = {
   modules: { boards: true, inventory: true },
@@ -22,26 +20,23 @@ const DEFAULT_FEATURES = {
 };
 
 function getFeatures() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(FEATURES_STORAGE_KEY));
-    if (stored && typeof stored === "object") {
-      return {
-        modules: Object.assign({}, DEFAULT_FEATURES.modules, stored.modules),
-        dashboardWidgets: Object.assign({}, DEFAULT_FEATURES.dashboardWidgets, stored.dashboardWidgets),
-        jobActivityTabs: Object.assign({}, DEFAULT_FEATURES.jobActivityTabs, stored.jobActivityTabs),
-        aiAssistant: typeof stored.aiAssistant === "boolean" ? stored.aiAssistant : true,
-        salesRepTracking: typeof stored.salesRepTracking === "boolean" ? stored.salesRepTracking : true,
-      };
-    }
-  } catch (e) {}
+  const stored = appSetting("feature_flags", null);
+  if (stored && typeof stored === "object") {
+    return {
+      modules: Object.assign({}, DEFAULT_FEATURES.modules, stored.modules),
+      dashboardWidgets: Object.assign({}, DEFAULT_FEATURES.dashboardWidgets, stored.dashboardWidgets),
+      jobActivityTabs: Object.assign({}, DEFAULT_FEATURES.jobActivityTabs, stored.jobActivityTabs),
+      aiAssistant: typeof stored.aiAssistant === "boolean" ? stored.aiAssistant : true,
+      salesRepTracking: typeof stored.salesRepTracking === "boolean" ? stored.salesRepTracking : true,
+    };
+  }
   return JSON.parse(JSON.stringify(DEFAULT_FEATURES));
 }
 
+// Applies at once; resolves to { error } once saved to Supabase.
 function setFeatures(features) {
-  try {
-    localStorage.setItem(FEATURES_STORAGE_KEY, JSON.stringify(features));
-  } catch (e) {}
   applyFeatures(features);
+  return saveAppSettings({ feature_flags: features });
 }
 
 // Sidebar nav is the one part of Features that's identical on every page,

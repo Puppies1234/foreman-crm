@@ -2,7 +2,6 @@
 // Brand, nothing elsewhere in the app reads this yet — there's no live
 // notification system to gate on it), so it lives here rather than its own
 // shared module.
-const NOTIFICATION_SETTINGS_STORAGE_KEY = "foreman-notification-settings";
 const DEFAULT_NOTIFICATION_SETTINGS = {
   alsoEmail: false,
   alsoText: false,
@@ -32,28 +31,26 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
   },
 };
 
+// Saved in Supabase's app_settings.notification_settings (js/settings-store.js).
 function getNotificationSettings() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(NOTIFICATION_SETTINGS_STORAGE_KEY));
-    if (stored && typeof stored === "object") {
-      return {
-        alsoEmail: typeof stored.alsoEmail === "boolean" ? stored.alsoEmail : false,
-        alsoText: typeof stored.alsoText === "boolean" ? stored.alsoText : false,
-        leadsScheduling: Object.assign({}, DEFAULT_NOTIFICATION_SETTINGS.leadsScheduling, stored.leadsScheduling),
-        aiAssistant: Object.assign({}, DEFAULT_NOTIFICATION_SETTINGS.aiAssistant, stored.aiAssistant),
-        jobsPipeline: Object.assign({}, DEFAULT_NOTIFICATION_SETTINGS.jobsPipeline, stored.jobsPipeline),
-        inventory: Object.assign({}, DEFAULT_NOTIFICATION_SETTINGS.inventory, stored.inventory),
-        payments: Object.assign({}, DEFAULT_NOTIFICATION_SETTINGS.payments, stored.payments),
-      };
-    }
-  } catch (e) {}
+  const stored = appSetting("notification_settings", null);
+  if (stored && typeof stored === "object") {
+    return {
+      alsoEmail: typeof stored.alsoEmail === "boolean" ? stored.alsoEmail : false,
+      alsoText: typeof stored.alsoText === "boolean" ? stored.alsoText : false,
+      leadsScheduling: Object.assign({}, DEFAULT_NOTIFICATION_SETTINGS.leadsScheduling, stored.leadsScheduling),
+      aiAssistant: Object.assign({}, DEFAULT_NOTIFICATION_SETTINGS.aiAssistant, stored.aiAssistant),
+      jobsPipeline: Object.assign({}, DEFAULT_NOTIFICATION_SETTINGS.jobsPipeline, stored.jobsPipeline),
+      inventory: Object.assign({}, DEFAULT_NOTIFICATION_SETTINGS.inventory, stored.inventory),
+      payments: Object.assign({}, DEFAULT_NOTIFICATION_SETTINGS.payments, stored.payments),
+    };
+  }
   return JSON.parse(JSON.stringify(DEFAULT_NOTIFICATION_SETTINGS));
 }
 
+// Resolves to { error } once saved to Supabase.
 function setNotificationSettings(settings) {
-  try {
-    localStorage.setItem(NOTIFICATION_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-  } catch (e) {}
+  return saveAppSettings({ notification_settings: settings });
 }
 
 // Settings → Automations. Same page-scoped reasoning as Notifications above
@@ -490,7 +487,11 @@ whenAppReady(function () {
 
     input.addEventListener('change', function () {
       onChange(input.checked);
-      setFeatures(featuresState);
+      // Saved to Supabase; if that fails it's rolled back, so redraw the
+      // switches from what's actually stored.
+      setFeatures(featuresState).then(function (r) {
+        if (r.error) { featuresState = getFeatures(); renderAllFeatureGroups(); }
+      });
     });
 
     return row;
@@ -545,10 +546,12 @@ whenAppReady(function () {
   var featuresResetConfirm = document.getElementById('features-reset-confirm');
   featuresResetBtn.addEventListener('click', function () {
     featuresState = JSON.parse(JSON.stringify(DEFAULT_FEATURES));
-    setFeatures(featuresState);
     renderAllFeatureGroups();
-    featuresResetConfirm.hidden = false;
-    setTimeout(function () { featuresResetConfirm.hidden = true; }, 2500);
+    setFeatures(featuresState).then(function (r) {
+      if (r.error) { featuresState = getFeatures(); renderAllFeatureGroups(); return; }
+      featuresResetConfirm.hidden = false;
+      setTimeout(function () { featuresResetConfirm.hidden = true; }, 2500);
+    });
   });
 
   // --- General tab ---
@@ -727,10 +730,12 @@ whenAppReady(function () {
     // chip still counts — Save shouldn't silently drop it.
     addServiceAreaEntries(serviceAreaInput.value);
     serviceAreaInput.value = '';
-    setBusinessSettings(businessDraft);
-    businessDraft = getBusinessSettings();
-    generalSaveConfirm.hidden = false;
-    setTimeout(function () { generalSaveConfirm.hidden = true; }, 2500);
+    setBusinessSettings(businessDraft).then(function (r) {
+      if (r.error) return; // the draft (what's on screen) is kept, so Save can be retried
+      businessDraft = getBusinessSettings();
+      generalSaveConfirm.hidden = false;
+      setTimeout(function () { generalSaveConfirm.hidden = true; }, 2500);
+    });
   });
 
   // --- General tab: Data Export ---
@@ -1285,9 +1290,11 @@ whenAppReady(function () {
   var notifSaveBtn = document.getElementById('notif-save-btn');
   var notifSaveConfirm = document.getElementById('notif-save-confirm');
   notifSaveBtn.addEventListener('click', function () {
-    setNotificationSettings(notificationsDraft);
-    notifSaveConfirm.hidden = false;
-    setTimeout(function () { notifSaveConfirm.hidden = true; }, 2500);
+    setNotificationSettings(notificationsDraft).then(function (r) {
+      if (r.error) return;
+      notifSaveConfirm.hidden = false;
+      setTimeout(function () { notifSaveConfirm.hidden = true; }, 2500);
+    });
   });
 
   // --- Automations tab ---
@@ -1788,10 +1795,12 @@ whenAppReady(function () {
       taxRate: Math.max(0, parseFloat(estDefaultTax.value) || 0),
       markup: Math.max(0, parseFloat(estDefaultMarkup.value) || 0),
       terms: estDefaultTerms.value.trim(),
+    }).then(function (r) {
+      if (r.error) return; // what's typed is kept, so Save can be retried
+      loadEstimateDefaultsForm();
+      estDefaultsConfirm.hidden = false;
+      setTimeout(function () { estDefaultsConfirm.hidden = true; }, 2500);
     });
-    loadEstimateDefaultsForm();
-    estDefaultsConfirm.hidden = false;
-    setTimeout(function () { estDefaultsConfirm.hidden = true; }, 2500);
   });
 
   // --- Payments tab ---
@@ -1826,15 +1835,7 @@ whenAppReady(function () {
   });
 
   saveBtn.addEventListener('click', function () {
-    theme.saveAccent(current);
-    theme.saveTechColors(techColors);
-    var stages = getLabels('status');
-    stages.forEach(function (stage) {
-      if (statusColorDraft[stage.id]) stage.color = statusColorDraft[stage.id];
-    });
-    persistLabels('status', stages);
-    statusColorDraft = {};
-    setBrand({
+    var brand = {
       name: brandDraft.name || DEFAULT_BRAND_NAME,
       logo: brandDraft.logo,
       logoNaturalWidth: brandDraft.logoNaturalWidth,
@@ -1843,8 +1844,37 @@ whenAppReady(function () {
       logoZoom: brandDraft.logoZoom || 1,
       logoOffsetX: brandDraft.logoOffsetX || 0,
       logoOffsetY: brandDraft.logoOffsetY || 0,
+    };
+    // Accent, technician colors and branding all live in the one
+    // app_settings row, so they're saved together in a single write — one
+    // success or one rollback, never half of them.
+    theme.apply(current);
+    theme.applyTechColors(techColors);
+    applyBrand(brand);
+    var settingsSaved = saveAppSettings(Object.assign({
+      accent_color: theme.hslToHex(current.h, current.s, current.l).toUpperCase(),
+      accent_brightness: current.l,
+      calendar_colors: techColors,
+    }, brandSettingsChanges(brand)));
+
+    // Contact Status Colors are the pipeline stages' own colors — the same
+    // labels rows Settings → Pipeline & Labels edits — so they save there.
+    var stages = getLabels('status');
+    stages.forEach(function (stage) {
+      if (statusColorDraft[stage.id]) stage.color = statusColorDraft[stage.id];
     });
-    saveConfirm.hidden = false;
+    var stagesSaved = persistLabels('status', stages);
+    statusColorDraft = {};
+
+    Promise.all([settingsSaved, stagesSaved]).then(function (results) {
+      if (results[0].error) {
+        // Rolled back in memory — redraw with what's actually stored.
+        theme.apply(theme.getAccent());
+        theme.applyTechColors(theme.getTechColors());
+        applyBrand();
+      }
+      if (results.every(function (r) { return !r.error; })) saveConfirm.hidden = false;
+    });
   });
 
   syncControls();

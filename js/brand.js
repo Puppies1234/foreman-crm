@@ -1,13 +1,11 @@
 // Company branding (logo + name) — applied to every page's sidebar
-// wordmark, logo mark, and <title>. Runs immediately at load, not wrapped
-// in DOMContentLoaded: this script tag is always placed after the sidebar
-// markup in the document, so those elements already exist by the time it
-// runs, and the swap happens before first paint reaches that point — no
-// flash of the default branding. Falls back invisibly to the default
-// (no logo mark shown, "Foreman" wordmark, Square shape) when nothing's
-// been customized (getBrand() always returns that shape either way, so
-// every caller can use it unconditionally).
-const BRAND_STORAGE_KEY = "foreman-brand";
+// wordmark, logo mark, and <title>. Saved in Supabase's app_settings row
+// (company_name, logo_data, logo_shape, logo_position — js/settings-store.js);
+// js/settings-store.js re-applies it once that row has loaded, and keeps
+// the page hidden until then, so the default branding is never seen.
+// Falls back to the default (no logo mark shown, "Foreman" wordmark,
+// Square shape) when nothing's been customized (getBrand() always returns
+// that shape either way, so every caller can use it unconditionally).
 const DEFAULT_BRAND_NAME = "Foreman";
 const DEFAULT_LOGO_SHAPE = "square";
 
@@ -22,32 +20,42 @@ const LOGO_SHAPES = {
 };
 
 function getBrand() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(BRAND_STORAGE_KEY));
-    if (stored && typeof stored === "object") {
-      return {
-        name: (typeof stored.name === "string" && stored.name.trim()) ? stored.name.trim() : DEFAULT_BRAND_NAME,
-        logo: typeof stored.logo === "string" ? stored.logo : null,
-        logoNaturalWidth: typeof stored.logoNaturalWidth === "number" ? stored.logoNaturalWidth : null,
-        logoNaturalHeight: typeof stored.logoNaturalHeight === "number" ? stored.logoNaturalHeight : null,
-        shape: LOGO_SHAPES[stored.shape] ? stored.shape : DEFAULT_LOGO_SHAPE,
-        logoZoom: typeof stored.logoZoom === "number" ? stored.logoZoom : 1,
-        logoOffsetX: typeof stored.logoOffsetX === "number" ? stored.logoOffsetX : 0,
-        logoOffsetY: typeof stored.logoOffsetY === "number" ? stored.logoOffsetY : 0,
-      };
-    }
-  } catch (e) {}
+  const name = appSetting("company_name", "");
+  const shape = appSetting("logo_shape", DEFAULT_LOGO_SHAPE);
+  const pos = appSetting("logo_position", {});
+  const num = (v, fallback) => (typeof v === "number" ? v : fallback);
   return {
-    name: DEFAULT_BRAND_NAME, logo: null, logoNaturalWidth: null, logoNaturalHeight: null,
-    shape: DEFAULT_LOGO_SHAPE, logoZoom: 1, logoOffsetX: 0, logoOffsetY: 0,
+    name: (typeof name === "string" && name.trim()) ? name.trim() : DEFAULT_BRAND_NAME,
+    logo: typeof appSetting("logo_data", null) === "string" ? appSetting("logo_data", null) : null,
+    logoNaturalWidth: num(pos.naturalWidth, null),
+    logoNaturalHeight: num(pos.naturalHeight, null),
+    shape: LOGO_SHAPES[shape] ? shape : DEFAULT_LOGO_SHAPE,
+    logoZoom: num(pos.zoom, 1),
+    logoOffsetX: num(pos.offsetX, 0),
+    logoOffsetY: num(pos.offsetY, 0),
   };
 }
 
+// The app_settings columns a brand is saved as.
+function brandSettingsChanges(brand) {
+  return {
+    company_name: brand.name,
+    logo_data: brand.logo || null,
+    logo_shape: brand.shape,
+    logo_position: {
+      zoom: brand.logoZoom,
+      offsetX: brand.logoOffsetX,
+      offsetY: brand.logoOffsetY,
+      naturalWidth: brand.logoNaturalWidth,
+      naturalHeight: brand.logoNaturalHeight,
+    },
+  };
+}
+
+// Applies at once; resolves to { error } once saved to Supabase.
 function setBrand(brand) {
-  try {
-    localStorage.setItem(BRAND_STORAGE_KEY, JSON.stringify(brand));
-  } catch (e) {}
   applyBrand(brand);
+  return saveAppSettings(brandSettingsChanges(brand));
 }
 
 // Computes the exact background-size/position for a logo inside a given
