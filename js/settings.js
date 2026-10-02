@@ -53,25 +53,8 @@ function setNotificationSettings(settings) {
   return saveAppSettings({ notification_settings: settings });
 }
 
-// Settings → Automations. Same page-scoped reasoning as Notifications above
-// — condition-matching and the Upcoming Automations preview are computed
-// fresh from JOBS/APPOINTMENTS every time this tab renders, so there's
-// nothing here for any other page to read.
-const AUTOMATIONS_STORAGE_KEY = "foreman-automations";
-
-function getAutomations() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(AUTOMATIONS_STORAGE_KEY));
-    if (Array.isArray(stored)) return stored;
-  } catch (e) {}
-  return [];
-}
-
-function setAutomations(rules) {
-  try {
-    localStorage.setItem(AUTOMATIONS_STORAGE_KEY, JSON.stringify(rules));
-  } catch (e) {}
-}
+// Settings → Automations rules live in Supabase — see js/automations-store.js
+// (getAutomations, saveAutomation, setAutomationEnabled, deleteAutomation).
 
 whenAppReady(function () {
   var theme = window.ForemanTheme;
@@ -858,25 +841,9 @@ whenAppReady(function () {
     });
   }
 
-  // Automation conditions store label names too, so they follow a rename
-  // (and drop a deleted value) the same way jobs do.
-  var AUTOMATION_CONDITION_KEYS = { status: 'status', job_type: 'jobType', appointment_type: 'appointmentType' };
-
-  function updateAutomationConditionValues(kind, oldName, newName) {
-    var key = AUTOMATION_CONDITION_KEYS[kind];
-    if (!key) return;
-    var rules = getAutomations();
-    var changed = false;
-    rules.forEach(function (rule) {
-      var values = rule.conditions && rule.conditions[key];
-      if (!values || values.indexOf(oldName) === -1) return;
-      rule.conditions[key] = newName === null
-        ? values.filter(function (v) { return v !== oldName; })
-        : values.map(function (v) { return v === oldName ? newName : v; });
-      changed = true;
-    });
-    if (changed) setAutomations(rules);
-  }
+  // Automation conditions point at labels by id (js/automations-store.js),
+  // so a rename reaches them automatically; a deleted label is removed from
+  // every rule that used it (see the delete button below).
 
   function labelUsageMessage(count) {
     return count + (count === 1 ? ' job is' : ' jobs are') + ' using this — reassign ' + (count === 1 ? 'it' : 'them') + ' first.';
@@ -1045,8 +1012,6 @@ whenAppReady(function () {
           nameInput.value = entry.name;
           return;
         }
-        var oldName = entry.name;
-        var newName = nameInput.value.trim();
         renameLabel(kind, entry.id, nameInput.value).then(function (error) {
           if (error) {
             labelEditorMessages[kind] = error;
@@ -1054,7 +1019,6 @@ whenAppReady(function () {
             return;
           }
           labelEditorMessages[kind] = null;
-          updateAutomationConditionValues(kind, oldName, newName);
           afterLabelChange(kind);
         });
       }
@@ -1129,7 +1093,7 @@ whenAppReady(function () {
           labelEditorMessages[kind] = 'Keep at least one ' + meta.noun + ' turned on.';
         } else {
           persistLabels(kind, getLabels(kind).filter(function (e) { return e.id !== entry.id; }));
-          updateAutomationConditionValues(kind, entry.name, null);
+          removeLabelFromAutomations(kind, entry.id);
           labelEditorMessages[kind] = null;
         }
         afterLabelChange(kind);
@@ -1455,17 +1419,14 @@ whenAppReady(function () {
       d.action = document.getElementById('auto-action-input').value;
       d.message = document.getElementById('auto-message-input').value;
 
-      if (d.id) {
-        var idx = rules.findIndex(function (r) { return r.id === d.id; });
-        if (idx !== -1) rules[idx] = d;
-      } else {
-        d.id = 'auto-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-        rules.push(d);
-      }
-      setAutomations(rules);
-      automationEditingId = null;
-      automationDraft = null;
-      refreshAutomationsTab();
+      // Saved to Supabase. The editor closes once that succeeds; if it
+      // fails, it stays open with everything as typed so Save can be retried.
+      saveAutomation(d).then(function (r) {
+        if (r.error) return;
+        automationEditingId = null;
+        automationDraft = null;
+        refreshAutomationsTab();
+      });
     });
 
     refreshOpenAccordionHeight(yourAutomationsSection);
@@ -1474,6 +1435,11 @@ whenAppReady(function () {
   function renderAutomationList() {
     var container = document.getElementById('automation-list');
     var rules = getAutomations();
+    if (window.automationsLoadError) {
+      container.innerHTML = '<div class="empty-note">Couldn\'t load automations from Supabase — reload to try again.</div>';
+      refreshOpenAccordionHeight(yourAutomationsSection);
+      return;
+    }
     if (rules.length === 0) {
       container.innerHTML = '<div class="empty-note">No automations yet.</div>';
       refreshOpenAccordionHeight(yourAutomationsSection);
@@ -1500,10 +1466,10 @@ whenAppReady(function () {
 
     container.querySelectorAll('.automation-enabled-toggle').forEach(function (input) {
       input.addEventListener('change', function () {
-        var rules = getAutomations();
-        var rule = rules.find(function (r) { return r.id === input.getAttribute('data-id'); });
-        if (rule) rule.enabled = input.checked;
-        setAutomations(rules);
+        setAutomationEnabled(input.getAttribute('data-id'), input.checked).then(function (r) {
+          if (r.error) renderAutomationList(); // rolled back — redraw the switch as stored
+          renderUpcomingAutomations();
+        });
         renderUpcomingAutomations();
       });
     });
@@ -1522,13 +1488,15 @@ whenAppReady(function () {
     container.querySelectorAll('.automation-delete-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id = btn.getAttribute('data-id');
-        setAutomations(getAutomations().filter(function (r) { return r.id !== id; }));
-        if (automationEditingId === id) {
-          automationEditingId = null;
-          automationDraft = null;
-          renderAutomationEditor();
-        }
-        refreshAutomationsTab();
+        deleteAutomation(id).then(function (r) {
+          if (r.error) return refreshAutomationsTab();
+          if (automationEditingId === id) {
+            automationEditingId = null;
+            automationDraft = null;
+            renderAutomationEditor();
+          }
+          refreshAutomationsTab();
+        });
       });
     });
 
