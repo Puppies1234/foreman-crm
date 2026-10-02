@@ -146,8 +146,9 @@ function whenAppReady(fn) {
   const domReady = document.readyState === "loading"
     ? new Promise(resolve => document.addEventListener("DOMContentLoaded", resolve, { once: true }))
     : Promise.resolve();
-  // window.automationsReady only exists on the Settings page.
-  Promise.all([domReady, settingsReady, contactsReady, labelsReady, jobsReady, window.automationsReady]).then(() => fn());
+  // window.automationsReady only exists on the Settings page, and
+  // window.estimateTemplatesReady on the Settings and job pages.
+  Promise.all([domReady, settingsReady, contactsReady, labelsReady, jobsReady, window.automationsReady, window.estimateTemplatesReady]).then(() => fn());
 }
 
 /* ------------------------------- Contact writes -------------------------------- */

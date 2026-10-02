@@ -1601,12 +1601,16 @@ whenAppReady(function () {
     }
     var d = estimateDraft;
 
-    var rowsHtml = d.lineItems.map(function (li) {
-      return '<div class="estimate-line-item-row" data-line-id="' + li.id + '">'
+    // Template rows get ↑/↓ to reorder lines (saved as sort_order); a job's
+    // own estimate editor uses the same row styles without them.
+    var rowsHtml = d.lineItems.map(function (li, i) {
+      return '<div class="estimate-line-item-row has-reorder" data-line-id="' + li.id + '">'
         + '<input type="text" class="text-input" data-field="name" placeholder="Item Name" value="' + escapeHtml(li.name) + '">'
         + '<input type="text" class="text-input" data-field="description" placeholder="Description" value="' + escapeHtml(li.description) + '">'
         + '<input type="number" class="text-input" data-field="quantity" min="0" step="1" value="' + li.quantity + '">'
         + '<input type="number" class="text-input" data-field="price" min="0" step="0.01" value="' + li.price + '">'
+        + '<button type="button" class="label-editor-btn estimate-move-line-btn" data-line-id="' + li.id + '" data-delta="-1" aria-label="Move line up" title="Move up"' + (i === 0 ? ' disabled' : '') + '>↑</button>'
+        + '<button type="button" class="label-editor-btn estimate-move-line-btn" data-line-id="' + li.id + '" data-delta="1" aria-label="Move line down" title="Move down"' + (i === d.lineItems.length - 1 ? ' disabled' : '') + '>↓</button>'
         + '<button type="button" class="materials-remove estimate-remove-line-btn" data-line-id="' + li.id + '" aria-label="Remove line item">&times;</button>'
         + '</div>';
     }).join('');
@@ -1616,7 +1620,7 @@ whenAppReady(function () {
       + '  <div class="edit-field"><span class="info-label">Template Name</span>'
       + '    <input type="text" class="text-input" id="est-tpl-name-input" placeholder="Template ' + (getEstimateTemplates().length + 1) + '" value="' + escapeHtml(d.name) + '"></div>'
       + '  <span class="info-label">Line Items</span>'
-      + '  <div class="estimate-line-items-header"><span>Item Name</span><span>Description</span><span>Qty</span><span>Price</span><span></span></div>'
+      + '  <div class="estimate-line-items-header has-reorder"><span>Item Name</span><span>Description</span><span>Qty</span><span>Price</span><span></span><span></span><span></span></div>'
       + '  <div class="estimate-line-items-list" id="est-tpl-line-items">' + rowsHtml + '</div>'
       + '  <button type="button" class="btn btn-secondary" id="est-tpl-add-line-btn">+ Add Line Item</button>'
       + '  <div class="estimate-total-row"><span>Total</span><span id="est-tpl-total">' + formatMoney(estimateLineItemsTotal(d.lineItems)) + '</span></div>'
@@ -1644,6 +1648,16 @@ whenAppReady(function () {
       renderEstimateTemplateEditor();
     });
 
+    document.querySelectorAll('#est-tpl-line-items .estimate-move-line-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var from = d.lineItems.findIndex(function (l) { return l.id === btn.getAttribute('data-line-id'); });
+        var to = from + parseInt(btn.getAttribute('data-delta'), 10);
+        if (from === -1 || to < 0 || to >= d.lineItems.length) return;
+        d.lineItems.splice(to, 0, d.lineItems.splice(from, 1)[0]);
+        renderEstimateTemplateEditor();
+      });
+    });
+
     document.querySelectorAll('#est-tpl-line-items .estimate-remove-line-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         d.lineItems = d.lineItems.filter(function (l) { return l.id !== btn.getAttribute('data-line-id'); });
@@ -1660,17 +1674,14 @@ whenAppReady(function () {
     document.getElementById('est-tpl-save-btn').addEventListener('click', function () {
       var templates = getEstimateTemplates();
       d.name = document.getElementById('est-tpl-name-input').value.trim() || ('Template ' + (templates.length + 1));
-      if (d.id) {
-        var idx = templates.findIndex(function (t) { return t.id === d.id; });
-        if (idx !== -1) templates[idx] = d;
-      } else {
-        d.id = 'template-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-        templates.push(d);
-      }
-      setEstimateTemplates(templates);
-      estimateEditingId = null;
-      estimateDraft = null;
-      refreshEstimatesTab();
+      // Saved to Supabase. The editor closes once that succeeds; if it
+      // fails, it stays open with everything as typed so Save can be retried.
+      saveEstimateTemplate(d).then(function (r) {
+        if (r.error) return;
+        estimateEditingId = null;
+        estimateDraft = null;
+        refreshEstimatesTab();
+      });
     });
 
     refreshOpenAccordionHeight(estimatesSection);
@@ -1679,6 +1690,11 @@ whenAppReady(function () {
   function renderEstimateTemplateList() {
     var container = document.getElementById('estimate-template-list');
     var templates = getEstimateTemplates();
+    if (window.estimateTemplatesLoadError) {
+      container.innerHTML = '<div class="empty-note">Couldn\'t load estimate templates from Supabase — reload to try again.</div>';
+      refreshOpenAccordionHeight(estimatesSection);
+      return;
+    }
     if (templates.length === 0) {
       container.innerHTML = '<div class="empty-note">No estimate templates yet.</div>';
       refreshOpenAccordionHeight(estimatesSection);
@@ -1712,12 +1728,13 @@ whenAppReady(function () {
     container.querySelectorAll('.estimate-template-delete-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id = btn.getAttribute('data-id');
-        setEstimateTemplates(getEstimateTemplates().filter(function (t) { return t.id !== id; }));
-        if (estimateEditingId === id) {
-          estimateEditingId = null;
-          estimateDraft = null;
-        }
-        refreshEstimatesTab();
+        deleteEstimateTemplate(id).then(function (r) {
+          if (!r.error && estimateEditingId === id) {
+            estimateEditingId = null;
+            estimateDraft = null;
+          }
+          refreshEstimatesTab();
+        });
       });
     });
 

@@ -1025,22 +1025,9 @@ function removeUploadedPhotoFromJob(jobId, photoId) {
    any job. Starting a job's estimate from one (startJobEstimate below) deep-
    copies its line items in — a one-time copy, never a live link: editing a
    job's estimate afterward never touches the template, and editing the
-   template later never touches an estimate already started from it. */
-const ESTIMATE_TEMPLATES_STORAGE_KEY = "foreman-estimate-templates";
-
-function getEstimateTemplates() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(ESTIMATE_TEMPLATES_STORAGE_KEY));
-    if (Array.isArray(stored)) return stored;
-  } catch (e) {}
-  return [];
-}
-
-function setEstimateTemplates(templates) {
-  try {
-    localStorage.setItem(ESTIMATE_TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
-  } catch (e) {}
-}
+   template later never touches an estimate already started from it.
+   The templates themselves live in Supabase — getEstimateTemplates() and
+   every template write are in js/estimate-templates-store.js. */
 
 function estimateLineItemsTotal(lineItems) {
   return lineItems.reduce((sum, li) => sum + (Number(li.quantity) || 0) * (Number(li.price) || 0), 0);

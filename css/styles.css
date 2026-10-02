@@ -3235,3 +3235,14 @@ button.label-editor-swatch:focus-visible {
    toggles) has loaded and been applied — js/settings-store.js — so the
    default branding never flashes before the real one. */
 html.settings-pending body { visibility: hidden; }
+
+/* Estimate TEMPLATE rows (Settings → Estimates) add ↑/↓ reorder buttons;
+   a job's own estimate rows keep the five-column layout above. */
+.estimate-line-items-header.has-reorder,
+.estimate-line-item-row.has-reorder {
+  grid-template-columns: 2fr 2fr 70px 100px 30px 30px 32px;
+}
+@media (max-width: 720px) {
+  .estimate-line-items-header.has-reorder,
+  .estimate-line-item-row.has-reorder { grid-template-columns: 1fr 1fr; }
+}
