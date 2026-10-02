@@ -155,7 +155,9 @@ function renderMaterialsUsed(job) {
     }
     const matches = INVENTORY.filter(i => i.name.toLowerCase().includes(q)).slice(0, 8);
     resultsEl.innerHTML = matches.length > 0
-      ? matches.map(i => `<div class="materials-search-result" data-id="${i.id}">${escapeHtml(i.name)} <span class="materials-search-result-qty">(${i.quantity} on hand)</span></div>`).join("")
+      // An item's old id when it has one (inventoryMaterialsId), so a job
+      // never gets a second Materials Used line for an item it already has.
+      ? matches.map(i => `<div class="materials-search-result" data-id="${escapeHtml(inventoryMaterialsId(i))}">${escapeHtml(i.name)} <span class="materials-search-result-qty">(${i.quantity} on hand)</span></div>`).join("")
       : `<div class="materials-search-empty">No matching items</div>`;
     resultsEl.hidden = false;
   });

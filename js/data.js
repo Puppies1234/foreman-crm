@@ -786,96 +786,9 @@ function getRecentlyViewedJobs() {
 }
 
 /* -------------------------------- Inventory -----------------------------------
-   Inventory items (id, name, description, quantity, unit_price, photo data
-   URL) live entirely in their own store — unlike every other store in this
-   file, this one holds the full records themselves (items get created and
-   deleted, not just a field override on a fixed mock array), seeded once
-   from INVENTORY_SEED the first time the app runs. */
-const INVENTORY_STORAGE_KEY = "foreman-inventory";
-const LOW_STOCK_THRESHOLD = 3;
-
-const INVENTORY_SEED = [
-  { id: "inv1", name: "Water Heater — 50 Gal Gas", description: "Standard 50-gallon gas water heater, 6-year warranty.", quantity: 4, unit_price: 850, photo: null },
-  { id: "inv2", name: "PEX Fittings — 1/2\" (10-pack)", description: "Half-inch PEX crimp fittings, brass, box of 10.", quantity: 22, unit_price: 18, photo: null },
-  { id: "inv3", name: "Shutoff Valve — 1/4 Turn", description: "Quarter-turn ball valve, 1/2\" compression.", quantity: 15, unit_price: 12, photo: null },
-  { id: "inv4", name: "Copper Pipe — 3/4\" (10ft)", description: "Type L copper pipe, 3/4 inch, 10-foot length.", quantity: 8, unit_price: 34, photo: null },
-  { id: "inv5", name: "Garbage Disposal — 1/2 HP", description: "Standard 1/2 HP continuous-feed disposal unit.", quantity: 3, unit_price: 95, photo: null },
-  { id: "inv6", name: "Wax Toilet Ring", description: "Standard wax ring with flange, for toilet installation.", quantity: 30, unit_price: 5, photo: null },
-];
-
-function readInventory() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(INVENTORY_STORAGE_KEY));
-    if (Array.isArray(stored)) return stored;
-  } catch (e) {}
-  return null;
-}
-
-function writeInventory(items) {
-  try {
-    localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(items));
-  } catch (e) {}
-}
-
-let INVENTORY = readInventory();
-if (!INVENTORY) {
-  INVENTORY = INVENTORY_SEED.map(item => Object.assign({}, item));
-  writeInventory(INVENTORY);
-}
-
-function getInventoryItem(id) {
-  return INVENTORY.find(item => item.id === id);
-}
-
-function isLowStock(item) {
-  return item.quantity <= LOW_STOCK_THRESHOLD;
-}
-
-function generateInventoryId() {
-  return "inv" + Date.now() + Math.floor(Math.random() * 1000);
-}
-
-function addInventoryItem(details) {
-  const item = {
-    id: generateInventoryId(),
-    name: details.name,
-    description: details.description,
-    quantity: details.quantity,
-    unit_price: details.unit_price,
-    photo: details.photo || null,
-  };
-  INVENTORY.push(item);
-  writeInventory(INVENTORY);
-  return item;
-}
-
-function updateInventoryItem(id, details) {
-  const item = getInventoryItem(id);
-  if (!item) return;
-  item.name = details.name;
-  item.description = details.description;
-  item.quantity = details.quantity;
-  item.unit_price = details.unit_price;
-  item.photo = details.photo;
-  writeInventory(INVENTORY);
-}
-
-function deleteInventoryItem(id) {
-  INVENTORY = INVENTORY.filter(item => item.id !== id);
-  writeInventory(INVENTORY);
-}
-
-// The ONLY sanctioned way to change quantity on hand — both manual
-// restocking (js/inventory.js) and automatic Completed-job deduction
-// (deductMaterialsForJob below) go through this, no floor at zero: a job
-// completing with more material used than is on hand should still deduct
-// and show the resulting negative, not silently clamp or block.
-function adjustInventoryQuantity(id, delta) {
-  const item = getInventoryItem(id);
-  if (!item) return;
-  item.quantity += delta;
-  writeInventory(INVENTORY);
-}
+   Inventory items live in Supabase — INVENTORY, getInventoryItem, isLowStock
+   and every inventory write (including adjustInventoryQuantity, which the
+   Completed deduction below uses) are in js/inventory-store.js. */
 
 /* --------------------------- Materials used (per job) -------------------------
    Which inventory items, and how many of each, a job used — its own store,

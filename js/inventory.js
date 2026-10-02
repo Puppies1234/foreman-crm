@@ -1,7 +1,9 @@
-// Inventory grid: view, add, edit, delete, and restock items. Quantity
-// deducted automatically when a job completes (js/data.js's
-// deductMaterialsForJob) uses the exact same store/adjustInventoryQuantity
-// as the manual +/- steppers here — one source of truth either way.
+// Inventory grid: view, add, edit, delete, and restock items — all saved to
+// Supabase (js/inventory-store.js). Quantity deducted automatically when a
+// job completes (js/data.js's deductMaterialsForJob) uses the exact same
+// adjustInventoryQuantity as the manual +/- steppers here — one source of
+// truth either way. Each change shows at once; if Supabase rejects it, it's
+// rolled back and the grid redraws with what's actually stored.
 const PACKAGE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8.5v7a1 1 0 0 1-.5.87l-8 4.5a1 1 0 0 1-1 0l-8-4.5A1 1 0 0 1 3 15.5v-7a1 1 0 0 1 .5-.87l8-4.5a1 1 0 0 1 1 0l8 4.5a1 1 0 0 1 .5.87z"/><path d="M3.27 7.96 12 13l8.73-5.04M12 22V13"/></svg>`;
 
 // Which item (if any) is mid-edit, or "new" while the add form is open —
@@ -114,7 +116,8 @@ function wireCards() {
   // Manual restock/use — separate from the automatic Completed deduction.
   document.querySelectorAll(".qty-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      adjustInventoryQuantity(btn.getAttribute("data-id"), parseInt(btn.getAttribute("data-delta"), 10));
+      adjustInventoryQuantity(btn.getAttribute("data-id"), parseInt(btn.getAttribute("data-delta"), 10))
+        .then(r => { if (r.error) render(); });
       render();
     });
   });
@@ -131,7 +134,7 @@ function wireCards() {
     btn.addEventListener("click", () => {
       const item = getInventoryItem(btn.getAttribute("data-id"));
       if (item && confirm(`Delete "${item.name}"?`)) {
-        deleteInventoryItem(item.id);
+        deleteInventoryItem(item.id).then(r => { if (r.error) render(); });
         render();
       }
     });
@@ -174,12 +177,14 @@ function wireCards() {
         photo: preview.dataset.photo || (existing ? existing.photo : null),
       };
 
-      if (existing) updateInventoryItem(existing.id, details);
-      else addInventoryItem(details);
-
-      inventoryEditingId = null;
-      inventoryAddingNew = false;
-      render();
+      // The editor closes once Supabase confirms; if the save fails it stays
+      // open with everything as typed, so Save can be retried.
+      (existing ? updateInventoryItem(existing.id, details) : addInventoryItem(details)).then(r => {
+        if (r.error) return;
+        inventoryEditingId = null;
+        inventoryAddingNew = false;
+        render();
+      });
     });
   });
 }
