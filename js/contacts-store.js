@@ -148,7 +148,7 @@ function whenAppReady(fn) {
     : Promise.resolve();
   // window.automationsReady only exists on the Settings page, and
   // window.estimateTemplatesReady on the Settings and job pages.
-  Promise.all([domReady, settingsReady, contactsReady, labelsReady, jobsReady, window.inventoryReady, window.automationsReady, window.estimateTemplatesReady]).then(() => fn());
+  Promise.all([domReady, settingsReady, contactsReady, labelsReady, jobsReady, window.inventoryReady, window.materialsReady, window.automationsReady, window.estimateTemplatesReady]).then(() => fn());
 }
 
 /* ------------------------------- Contact writes -------------------------------- */

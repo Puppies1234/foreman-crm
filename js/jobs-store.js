@@ -314,7 +314,11 @@ async function setJobStatus(jobId, status) {
   const entry = findLabel("status", status);
   if (!entry) return { error: new Error(`No stage called "${status}"`) };
 
-  const deductNow = status === statusNameForRole("completed") && !job.materials_deducted;
+  // Only if this page has the job's Materials Used loaded — otherwise the
+  // job would be marked deducted with nothing actually deducted, and the
+  // once-only flag would stop it ever happening.
+  const materialsLoaded = typeof materialsAvailableForDeduction === "function" && materialsAvailableForDeduction();
+  const deductNow = status === statusNameForRole("completed") && !job.materials_deducted && materialsLoaded;
   const changes = { status, status_id: entry.id };
   if (deductNow) changes.materials_deducted = true;
 

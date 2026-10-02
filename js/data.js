@@ -791,48 +791,9 @@ function getRecentlyViewedJobs() {
    Completed deduction below uses) are in js/inventory-store.js. */
 
 /* --------------------------- Materials used (per job) -------------------------
-   Which inventory items, and how many of each, a job used — its own store,
-   keyed by job id, completely separate from the Job card's Edit/Save/Cancel
-   fields: additions and removals save immediately, same as the status
-   pills. Also what deductMaterialsForJob() below reads when a job first
-   reaches Completed. */
-const JOB_MATERIALS_STORAGE_KEY = "foreman-job-materials";
-
-function readJobMaterialsStore() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(JOB_MATERIALS_STORAGE_KEY));
-    if (stored && typeof stored === "object") return stored;
-  } catch (e) {}
-  return {};
-}
-
-function writeJobMaterialsStore(store) {
-  try {
-    localStorage.setItem(JOB_MATERIALS_STORAGE_KEY, JSON.stringify(store));
-  } catch (e) {}
-}
-
-function getMaterialsForJob(jobId) {
-  return readJobMaterialsStore()[jobId] || [];
-}
-
-// Adding the same item twice merges into one line (quantity adds up)
-// rather than creating a second row for it.
-function addMaterialToJob(jobId, inventoryId, quantity) {
-  const store = readJobMaterialsStore();
-  const list = store[jobId] || [];
-  const existing = list.find(m => m.inventory_id === inventoryId);
-  if (existing) existing.quantity += quantity;
-  else list.push({ inventory_id: inventoryId, quantity });
-  store[jobId] = list;
-  writeJobMaterialsStore(store);
-}
-
-function removeMaterialFromJob(jobId, inventoryId) {
-  const store = readJobMaterialsStore();
-  store[jobId] = (store[jobId] || []).filter(m => m.inventory_id !== inventoryId);
-  writeJobMaterialsStore(store);
-}
+   Stored in Supabase — getMaterialsForJob, addMaterialToJob and
+   removeMaterialFromJob are in js/materials-store.js. Also what
+   deductMaterialsForJob() below reads when a job first reaches Completed. */
 
 // One real cap, applied to every upload regardless of which tab it came
 // from: localStorage's own quota (usually 5-10MB per origin, shared by

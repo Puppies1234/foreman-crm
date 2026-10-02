@@ -9,12 +9,10 @@
         so every other page skips photo_data and stays light.
    Page scripts start rendering through whenAppReady(), which waits for this.
 
-   IDs: inventory_items.id is a uuid, but Materials Used (still localStorage,
-   not migrated yet) points at items by their OLD app ids ("inv2",
-   "inv1727…"). Each migrated item keeps that old id in legacy_id, and
-   getInventoryItem() finds an item by either one — so every Materials Used
-   line keeps resolving, and the Materials Used migration can map old → new
-   through legacy_id. */
+   IDs: inventory_items.id is a uuid; each migrated item also keeps its OLD
+   app id ("inv2", "inv1727…") in legacy_id, and getInventoryItem() finds an
+   item by either one. Materials Used's own migration maps the old ids it
+   had saved to uuids this way (js/materials-store.js). */
 const INVENTORY = [];
 const LOW_STOCK_THRESHOLD = 3;
 
@@ -120,13 +118,6 @@ function getInventoryItem(id) {
 
 function isLowStock(item) {
   return item.quantity <= LOW_STOCK_THRESHOLD;
-}
-
-// The id Materials Used should store when an item is picked: its old id if
-// it has one (so a job never ends up with two lines for the same item), else
-// its uuid.
-function inventoryMaterialsId(item) {
-  return item.legacy_id || item.id;
 }
 
 async function runInventoryWrite(apply, write) {

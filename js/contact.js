@@ -155,9 +155,7 @@ function renderMaterialsUsed(job) {
     }
     const matches = INVENTORY.filter(i => i.name.toLowerCase().includes(q)).slice(0, 8);
     resultsEl.innerHTML = matches.length > 0
-      // An item's old id when it has one (inventoryMaterialsId), so a job
-      // never gets a second Materials Used line for an item it already has.
-      ? matches.map(i => `<div class="materials-search-result" data-id="${escapeHtml(inventoryMaterialsId(i))}">${escapeHtml(i.name)} <span class="materials-search-result-qty">(${i.quantity} on hand)</span></div>`).join("")
+      ? matches.map(i => `<div class="materials-search-result" data-id="${i.id}">${escapeHtml(i.name)} <span class="materials-search-result-qty">(${i.quantity} on hand)</span></div>`).join("")
       : `<div class="materials-search-empty">No matching items</div>`;
     resultsEl.hidden = false;
   });
@@ -174,13 +172,14 @@ function renderMaterialsUsed(job) {
   addBtn.addEventListener("click", () => {
     if (!selectedItemId) return;
     const qty = Math.max(1, parseInt(document.getElementById("materials-add-qty").value, 10) || 1);
-    addMaterialToJob(job.id, selectedItemId, qty);
+    // Saved to Supabase; shows at once, and redraws if the save is rejected.
+    addMaterialToJob(job.id, selectedItemId, qty).then(r => { if (r.error) renderMaterialsUsed(job); });
     renderMaterialsUsed(job);
   });
 
   el.querySelectorAll(".materials-remove").forEach(btn => {
     btn.addEventListener("click", () => {
-      removeMaterialFromJob(job.id, btn.getAttribute("data-inv-id"));
+      removeMaterialFromJob(job.id, btn.getAttribute("data-inv-id")).then(r => { if (r.error) renderMaterialsUsed(job); });
       renderMaterialsUsed(job);
     });
   });
